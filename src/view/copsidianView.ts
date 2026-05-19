@@ -750,6 +750,11 @@ export class CopsidianView extends ItemView {
 	private async stopGeneration(): Promise<void> {
 		const c = this.plugin.getClient();
 		if (!c || !this.state.sessionId || !this.busy) return;
+		// Reset UI immediately so user gets feedback
+		this.busy = false;
+		this.state.isStreaming = false;
+		this.input.setStreaming(false);
+		this.toolbar.setSending(false);
 		try {
 			await c.cancel(this.state.sessionId);
 		} catch (e) {

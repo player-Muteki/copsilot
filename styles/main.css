@@ -108,16 +108,40 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
+  padding: 5px 10px;
   background: var(--background-secondary);
   cursor: pointer;
   font-size: var(--font-smaller);
 }
 
-.copsidian-tool-call-header .tc-status {
+.copsidian-tool-call-header .tc-kind {
   font-size: 10px;
-  opacity: 0.7;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-accent);
+  flex-shrink: 0;
+  min-width: 32px;
 }
+
+.copsidian-tool-call-header .tc-file {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: var(--font-smaller);
+}
+
+.copsidian-tool-call-header .tc-stat {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+}
+
+.copsidian-tool-call-header .tc-stat-done { color: #22c55e; }
+.copsidian-tool-call-header .tc-stat-fail { color: var(--text-error); }
 
 .copsidian-tool-call-body {
   padding: 8px 10px;

@@ -190,22 +190,24 @@ export class ChatRenderer {
     this.scrollToBottom();
   }
 
-  addToolCall(id: string, title: string, kind: string, input: Record<string, unknown>): void {
+  addToolCall(id: string, title: string, kind: string, input: Record<string, unknown> | undefined): void {
     const wrap = this.container.createDiv({ cls: 'copsidian-msg assistant' });
     const box = wrap.createDiv({ cls: 'copsidian-tool-call' });
     box.dataset.toolId = id;
 
-    const toolIcon = this.toolIcon(kind);
     const hdr = box.createDiv({ cls: 'copsidian-tool-call-header' });
-    hdr.createSpan({ text: `${toolIcon} ${title}`, cls: 'tc-title' });
-    hdr.createSpan({ text: 'pending', cls: 'tc-status' });
+    hdr.createSpan({ text: kind || 'tool', cls: 'tc-kind' });
+
+    const filePath = (input?.filePath ?? input?.path ?? title) as string;
+    const fileName = filePath.split('/').pop() ?? filePath;
+    hdr.createSpan({ text: fileName, cls: 'tc-file' });
+
+    hdr.createSpan({ text: '…', cls: 'tc-stat' });
 
     const body = box.createDiv({ cls: 'copsidian-tool-call-body' });
-    body.textContent = JSON.stringify(input, null, 2);
     body.style.display = 'none';
 
-    box.style.display = 'none';
-    hdr.onclick = () => { box.style.display = box.style.display === 'none' ? 'block' : 'none' };
+    hdr.onclick = () => { body.style.display = body.style.display === 'none' ? 'block' : 'none'; };
 
     this.toolEls.set(id, box);
   }
@@ -219,26 +221,38 @@ export class ChatRenderer {
     const box = this.toolEls.get(id);
     if (!box) return;
     const hdr = box.querySelector('.copsidian-tool-call-header') as HTMLElement;
-    const statusEl = hdr.querySelector('.tc-status') as HTMLElement;
-    statusEl.textContent = status;
+    const statEl = hdr.querySelector('.tc-stat') as HTMLElement;
 
     const body = box.querySelector('.copsidian-tool-call-body') as HTMLElement;
 
     if (status === 'completed' && content) {
       body.empty();
+      let added = 0, removed = 0;
       for (const item of content) {
         if (item.type === 'diff' && item.path && item.oldText !== undefined && item.newText !== undefined) {
-          const diffEl = this.renderDiff(item.path, item.oldText, item.newText);
-          body.appendChild(diffEl);
+          const oldLines = item.oldText.split('\n');
+          const newLines = item.newText.split('\n');
+          for (let i = 0; i < Math.max(oldLines.length, newLines.length); i++) {
+            if (oldLines[i] === undefined) added++;
+            else if (newLines[i] === undefined) removed++;
+            else if (oldLines[i] !== newLines[i]) { added++; removed++; }
+          }
+          body.appendChild(this.renderDiff(item.path, item.oldText, item.newText));
         } else if (item.type === 'content' && item.content?.text) {
           body.createDiv({ text: item.content.text });
         }
       }
-      body.style.display = 'block';
+      const statParts: string[] = [];
+      if (added) statParts.push(`+${added}`);
+      if (removed) statParts.push(`-${removed}`);
+      statEl.textContent = statParts.join(' ') || '✓';
+      statEl.className = 'tc-stat tc-stat-done';
     } else if (status === 'in_progress') {
-      statusEl.textContent = 'running…';
+      statEl.textContent = '…';
+    } else if (status === 'failed') {
+      statEl.textContent = '✗';
+      statEl.className = 'tc-stat tc-stat-fail';
     }
-    box.style.display = 'block';
     this.scrollToBottom();
   }
 
@@ -313,8 +327,12 @@ export class ChatRenderer {
   }
 
   showUsage(usage: UsageDisplay): void {
+    // Ensure we have a wrap to attach usage to (may be null if only tool calls, no text)
+    if (!this.currentAssistantWrap) {
+      const wrap = this.container.createDiv({ cls: 'copsidian-msg assistant' });
+      this.currentAssistantWrap = wrap;
+    }
     const target = this.currentAssistantWrap;
-    if (!target) return;
 
     target.querySelector('.copsidian-usage')?.remove();
     const el = target.createDiv({ cls: 'copsidian-usage' });
@@ -334,16 +352,5 @@ export class ChatRenderer {
   private formatTimestamp(ts: number): string {
     const date = new Date(ts);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-
-  private toolIcon(kind: string): string {
-    switch (kind) {
-      case 'read': return '[read]';
-      case 'edit': return '[edit]';
-      case 'execute': return '[exec]';
-      case 'fetch': return '[fetch]';
-      case 'search': return '[search]';
-      default: return '[tool]';
-    }
   }
 }
