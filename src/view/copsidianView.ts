@@ -44,6 +44,7 @@ export class CopsidianView extends ItemView {
 	private newMessagesBtn: HTMLButtonElement | null = null;
 	private dragOverlayEl: HTMLDivElement | null = null;
 	private pendingImageParts: PromptPart[] = [];
+	private lastAutoRefId: string | null = null;
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -236,6 +237,9 @@ export class CopsidianView extends ItemView {
 
 		// Auto-reference the currently active file
 		this.autoRefActiveFile();
+
+		// Track active file changes
+		this.setupActiveFileTracking();
 
 		// Register global keybindings
 		this.registerKeybindings();
@@ -912,9 +916,31 @@ export class CopsidianView extends ItemView {
 	}
 
 	private autoRefActiveFile(): void {
-		const file = this.plugin.app.workspace.getActiveFile();
+		// Try to get the active file from a non-Copsidian leaf
+		const leaves = this.plugin.app.workspace.getLeavesOfType('markdown');
+		const activeLeaf = this.plugin.app.workspace.getMostRecentLeaf();
+		const file = activeLeaf?.view?.getViewType() === 'markdown'
+			? (activeLeaf.view as any).file
+			: leaves[0]?.view ? (leaves[0].view as any).file : null;
 		if (!file || file.extension !== 'md') return;
 		this.addChip({ id: file.path, type: 'note', name: file.basename, path: file.path });
+	}
+
+	private setupActiveFileTracking(): void {
+		this.registerEvent(
+			this.plugin.app.workspace.on('active-leaf-change', (leaf) => {
+				if (!leaf) return;
+				const view = leaf.view as any;
+				if (view?.getViewType?.() !== 'markdown') return;
+				const file = view.file;
+				if (!file || file.extension !== 'md') return;
+				// Replace existing auto-ref chip with the new active file
+				const existing = this.currentRefs.find(r => r.id === this.lastAutoRefId);
+				if (existing) this.removeChip(existing.id);
+				this.lastAutoRefId = file.path;
+				this.addChip({ id: file.path, type: 'note', name: file.basename, path: file.path });
+			}),
+		);
 	}
 
 	// ── Autocomplete ──

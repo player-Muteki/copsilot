@@ -15,6 +15,7 @@ export class ChatRenderer {
   private app: App;
   private shouldAutoScroll: () => boolean;
   private currentAssistantEl: HTMLDivElement | null = null;
+  private currentAssistantWrap: HTMLDivElement | null = null;
   private currentAssistantText = '';
   private currentAssistantId: string | null = null;
   private currentAssistantType: 'text' | 'thinking' = 'text';
@@ -35,6 +36,7 @@ export class ChatRenderer {
     this.container.empty();
     this.toolEls.clear();
     this.currentAssistantEl = null;
+    this.currentAssistantWrap = null;
     this.currentAssistantText = '';
     this.currentAssistantId = null;
     this.currentAssistantType = 'text';
@@ -99,6 +101,7 @@ export class ChatRenderer {
     if (!this.currentAssistantEl) {
       const wrap = this.container.createDiv({ cls: 'copsidian-msg assistant' });
       wrap.dataset.timestamp = this.formatTimestamp(timestamp ?? Date.now());
+      this.currentAssistantWrap = wrap;
       this.currentAssistantEl = wrap.createDiv({ cls: 'copsidian-msg-body' });
     }
     if (this.renderTimeout !== null) clearTimeout(this.renderTimeout);
@@ -307,13 +310,11 @@ export class ChatRenderer {
   }
 
   showUsage(usage: UsageDisplay): void {
-    // Attach usage to the last assistant message wrap, not globally
-    const msgs = this.container.querySelectorAll('.copsidian-msg.assistant');
-    const lastMsg = msgs[msgs.length - 1] as HTMLElement | undefined;
-    if (!lastMsg) return;
+    const target = this.currentAssistantWrap;
+    if (!target) return;
 
-    lastMsg.querySelector('.copsidian-usage')?.remove();
-    const el = lastMsg.createDiv({ cls: 'copsidian-usage' });
+    target.querySelector('.copsidian-usage')?.remove();
+    const el = target.createDiv({ cls: 'copsidian-usage' });
 
     const parts: string[] = [];
     if (usage.inputTokens) parts.push(`↑${usage.inputTokens}`);

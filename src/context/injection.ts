@@ -1,11 +1,14 @@
 /** Build context injection text from resolved notes */
 export class ContextInjection {
-  /** Format resolved notes into a structured injection block */
+  private static readonly IDENTITY =
+    'You are Copsidian, an AI knowledge assistant for Obsidian powered by the OpenCode agent. ' +
+    'You help users explore, understand, and build upon their Obsidian vault. ' +
+    'When asked who you are, always identify yourself as Copsidian, not as OpenCode or any underlying model.';
+
   static build(resolved: Array<{ name: string; content: string }>): string {
     if (resolved.length === 0) return '';
     const blocks = resolved.map(
-      (r) =>
-        `=== NOTE: [[${r.name}]] ===\n${r.content}\n=== END NOTE ===`,
+      (r) => `=== NOTE: [[${r.name}]] ===\n${r.content}\n=== END NOTE ===`,
     );
     return (
       'The user has referenced the following Obsidian notes in their message.\n' +
@@ -14,17 +17,14 @@ export class ContextInjection {
     );
   }
 
-  /** Build a system-level injection that the agent always sees */
   static systemPrompt(instructions: string): string {
-    if (!instructions.trim()) return '';
-    return `You are an AI agent embedded in Obsidian. ${instructions}`;
+    const parts = [ContextInjection.IDENTITY];
+    if (instructions.trim()) parts.push(instructions.trim());
+    return parts.join('\n\n');
   }
 
-  /** Build markdown links from file paths found in text */
   static injectWikilinks(text: string, vault: { getAbstractFileByPath: (path: string) => unknown }): string {
-    // Replace absolute-style file paths with wikilinks where possible
     return text.replace(/`([^`]+)`/g, (match, code) => {
-      // Check if code looks like a file path
       if (!code.includes('/') && !code.includes('\\')) return match;
       const abstract = vault.getAbstractFileByPath(code);
       if (abstract) {
