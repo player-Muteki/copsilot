@@ -28,18 +28,18 @@
 
 ### Installation
 
-**Via BRAT (recommended for beta)**
-
-1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin
-2. Open BRAT settings → **Add Beta Plugin**
-3. Enter this repository URL
-4. Enable the plugin in Obsidian settings
-
-**Manual**
+**Manual (recommended)**
 
 1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](../../releases/latest)
 2. Create `.obsidian/plugins/copsidian/` in your vault
 3. Copy the three files into that folder
+4. Enable the plugin in Obsidian settings
+
+**Via BRAT**
+
+1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin
+2. Open BRAT settings → **Add Beta Plugin**
+3. Enter this repository URL
 4. Enable the plugin in Obsidian settings
 
 ### Configuration
@@ -97,18 +97,18 @@ npm run check    # TypeScript strict check
 
 ### 安装方式
 
-**通过 BRAT 安装（推荐，适合测试版）**
-
-1. 安装 [BRAT](https://github.com/TfTHacker/obsidian42-brat) 插件
-2. 打开 BRAT 设置 → **Add Beta Plugin**
-3. 输入本仓库地址
-4. 在 Obsidian 设置中启用插件
-
-**手动安装**
+**手动安装（推荐）**
 
 1. 从[最新 Release](../../releases/latest) 下载 `main.js`、`manifest.json` 和 `styles.css`
 2. 在 Vault 中创建 `.obsidian/plugins/copsidian/` 目录
 3. 将三个文件复制到该目录
+4. 在 Obsidian 设置中启用插件
+
+**通过 BRAT 安装**
+
+1. 安装 [BRAT](https://github.com/TfTHacker/obsidian42-brat) 插件
+2. 打开 BRAT 设置 → **Add Beta Plugin**
+3. 输入本仓库地址
 4. 在 Obsidian 设置中启用插件
 
 ### 配置说明
