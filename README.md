@@ -146,4 +146,4 @@ npm run check    # TypeScript 严格检查
 
 ## License / 许可证
 
-MIT
+MIT © 2026 [YouSheng Kang](https://github.com/player-Muteki)

@@ -18,5 +18,7 @@
     "obsidian": "latest",
     "typescript": "^5.7.0"
   },
+  "author": "YouSheng Kang",
+  "license": "MIT",
   "private": true
 }
