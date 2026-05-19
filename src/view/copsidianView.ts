@@ -327,6 +327,13 @@ export class CopsidianView extends ItemView {
 			}
 		};
 		this.contentEl.addEventListener('keydown', this.globalKeyHandler);
+		document.addEventListener('keydown', (e: KeyboardEvent) => {
+			if (e.key === 'Escape' && this.busy) {
+				e.preventDefault();
+				e.stopPropagation();
+				void this.stopGeneration();
+			}
+		}, true);
 	}
 
 	private unregisterKeybindings(): void {
