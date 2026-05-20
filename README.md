@@ -34,6 +34,8 @@ Existing AI plugins for Obsidian fall into two categories: those that require th
 
 **Auto-Reconnect** — Automatically recovers when the OpenCode process crashes.
 
+**i18n (Internationalization)** — Switch between English and Chinese UI in Settings → Appearance. Community translations welcome.
+
 ## Requirements
 
 - [OpenCode CLI](https://opencode.ai) installed and accessible
@@ -91,6 +93,7 @@ Existing AI plugins for Obsidian fall into two categories: those that require th
 | Max Messages per Session | Truncate session when exceeded | `200` |
 | Session Retention Days | Remove empty sessions older than this | `30` |
 | Sync Rules | Map tool call results to vault notes (tool → folder → filename template) | — |
+| Language | UI language (`en` / `zh`) | `en` |
 | Auto Connect | Connect to OpenCode on Obsidian startup | `true` |
 
 ## Keyboard Shortcuts
@@ -167,6 +170,7 @@ src/
 │   └── templates.ts             # Filename template rendering ({{tool}}, {{date}}, {{shortId}})
 │
 ├── commands/                    # Slash command definitions
+├── i18n/                        # Internationalization (EN/ZH locale dictionaries)
 └── utils/                       # Cross-cutting utilities (vault path, etc.)
 ```
 
@@ -181,7 +185,7 @@ src/
 - [ ] Inline edit (select text in note → AI edit with diff preview)
 - [ ] MCP server support
 - [ ] Custom agents and skills
-- [ ] i18n (internationalization)
+- [x] i18n (internationalization)
 - [ ] More to come!
 
 ## License
@@ -236,6 +240,8 @@ Licensed under the [MIT License](LICENSE).
 **权限模式** — 选择你的控制级别：`yolo`（全部自动批准）/ `plan`（批准安全操作）/ `safe`（逐一确认）。
 
 **自动重连** — OpenCode 进程崩溃后自动恢复连接。
+
+**国际化（i18n）** — 在设置 → 外观中切换中英文界面，社区翻译欢迎提交 PR。
 
 ## 系统要求
 
@@ -294,6 +300,7 @@ Licensed under the [MIT License](LICENSE).
 | 每会话最大消息数 | 超出后截断 | `200` |
 | 会话保留天数 | 超出天数的空会话将被清除 | `30` |
 | 同步规则 | 将工具调用结果映射为 Vault 笔记（工具 → 文件夹 → 文件名模板） | — |
+| 界面语言 | UI 语言（`en` / `zh`） | `en` |
 | 自动连接 | Obsidian 启动时自动连接 OpenCode | `true` |
 
 ## 键盘快捷键
@@ -370,6 +377,7 @@ src/
 │   └── templates.ts             # 文件名模板渲染（{{tool}}、{{date}}、{{shortId}}）
 │
 ├── commands/                    # 斜杠命令定义
+├── i18n/                        # 国际化（中英双语词典）
 └── utils/                       # 通用工具函数（Vault 路径等）
 ```
 
@@ -384,7 +392,7 @@ src/
 - [ ] 行内编辑（选中笔记文字 → AI 编辑并显示 Diff 预览）
 - [ ] MCP 服务器支持
 - [ ] 自定义 Agent 和技能
-- [ ] 国际化（i18n）
+- [x] 国际化（i18n）
 - [ ] 更多功能持续开发中！
 
 ## 许可证
