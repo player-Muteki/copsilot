@@ -36,6 +36,8 @@ Existing AI plugins for Obsidian fall into two categories: those that require th
 
 **i18n (Internationalization)** — Switch between English and Chinese UI in Settings → Appearance. Community translations welcome.
 
+**MCP Servers** — Configure local MCP servers in Settings and attach them automatically when creating new OpenCode sessions.
+
 ## Requirements
 
 - [OpenCode CLI](https://opencode.ai) installed and accessible
@@ -93,6 +95,7 @@ Existing AI plugins for Obsidian fall into two categories: those that require th
 | Max Messages per Session | Truncate session when exceeded | `200` |
 | Session Retention Days | Remove empty sessions older than this | `30` |
 | Sync Rules | Map tool call results to vault notes (tool → folder → filename template) | — |
+| MCP Servers | Local stdio MCP server definitions (name → command → args) passed to new OpenCode sessions | — |
 | Language | UI language (`en` / `zh`) | `en` |
 | Auto Connect | Connect to OpenCode on Obsidian startup | `true` |
 
@@ -183,7 +186,7 @@ src/
 - [x] Model and mode switching
 - [x] Drag & drop files and images
 - [ ] Inline edit (select text in note → AI edit with diff preview)
-- [ ] MCP server support
+- [x] MCP server support
 - [ ] Custom agents and skills
 - [x] i18n (internationalization)
 - [ ] More to come!
@@ -243,6 +246,8 @@ Licensed under the [MIT License](LICENSE).
 
 **国际化（i18n）** — 在设置 → 外观中切换中英文界面，社区翻译欢迎提交 PR。
 
+**MCP 服务器** — 在设置中配置本地 MCP 服务器，新建 OpenCode 会话时自动附加。
+
 ## 系统要求
 
 - 已安装并可访问 [OpenCode CLI](https://opencode.ai)
@@ -300,6 +305,7 @@ Licensed under the [MIT License](LICENSE).
 | 每会话最大消息数 | 超出后截断 | `200` |
 | 会话保留天数 | 超出天数的空会话将被清除 | `30` |
 | 同步规则 | 将工具调用结果映射为 Vault 笔记（工具 → 文件夹 → 文件名模板） | — |
+| MCP 服务器 | 本地 stdio MCP 服务器定义（名称 → 命令 → 参数），用于新建 OpenCode 会话 | — |
 | 界面语言 | UI 语言（`en` / `zh`） | `en` |
 | 自动连接 | Obsidian 启动时自动连接 OpenCode | `true` |
 
@@ -390,7 +396,7 @@ src/
 - [x] 模型和模式切换
 - [x] 拖拽文件和图片
 - [ ] 行内编辑（选中笔记文字 → AI 编辑并显示 Diff 预览）
-- [ ] MCP 服务器支持
+- [x] MCP 服务器支持
 - [ ] 自定义 Agent 和技能
 - [x] 国际化（i18n）
 - [ ] 更多功能持续开发中！
