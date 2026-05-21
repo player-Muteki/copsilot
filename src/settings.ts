@@ -6,6 +6,10 @@ import { VIEW_TYPE } from './types';
 import type { PermissionLevel, SyncRule } from './types';
 import { setLocale } from './i18n/index';
 
+interface AutoScrollView {
+  setAutoScrollEnabled?: (enabled: boolean) => void;
+}
+
 export class CopsidianSettingsTab extends PluginSettingTab {
   constructor(private plugin: CopsidianPlugin) {
     super(plugin.app, plugin);
@@ -144,7 +148,7 @@ export class CopsidianSettingsTab extends PluginSettingTab {
           await this.save();
           const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE);
           for (const leaf of leaves) {
-            const view = leaf.view as any;
+            const view = leaf.view as AutoScrollView;
             if (typeof view?.setAutoScrollEnabled === 'function') {
               view.setAutoScrollEnabled(v);
             }

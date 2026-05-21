@@ -7,6 +7,14 @@ import { DEFAULT_SETTINGS, VIEW_TYPE } from './types';
 import type { CopsidianSettings, SerializedSession, SerializedMessage, PluginData } from './types';
 import { getVaultPath } from './utils/vault';
 
+interface WorkspaceWithSideLeaf {
+  ensureSideLeaf?: (
+    viewType: string,
+    side: 'left' | 'right',
+    options?: { active?: boolean; reveal?: boolean },
+  ) => Promise<import('obsidian').WorkspaceLeaf>;
+}
+
 export default class CopsidianPlugin extends Plugin {
   settings: CopsidianSettings = DEFAULT_SETTINGS;
   client: AgentRuntime | null = null;
@@ -137,7 +145,7 @@ export default class CopsidianPlugin extends Plugin {
       return;
     }
 
-    const workspace = this.app.workspace as any;
+    const workspace = this.app.workspace as typeof this.app.workspace & WorkspaceWithSideLeaf;
     let leaf = null as import('obsidian').WorkspaceLeaf | null;
 
     if (typeof workspace.ensureSideLeaf === 'function') {
