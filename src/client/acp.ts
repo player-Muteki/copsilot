@@ -18,6 +18,8 @@ import type { SessionMeta } from '../types';
 import type { AcpResponse } from '../types';
 import { t } from '../i18n/index';
 
+export const CLIENT_VERSION = '0.0.10';
+
 interface JsonRpcRequest {
   jsonrpc: '2.0';
   id: number;
@@ -266,7 +268,7 @@ export class AcpClient implements OpencodeClient {
 
     await this.request('initialize', {
       protocolVersion: 1,
-      clientInfo: { name: 'copsidian', version: '0.2.0' },
+      clientInfo: { name: 'copsidian', version: CLIENT_VERSION },
       clientCapabilities: {},
     });
     this.connected = true;
@@ -475,14 +477,26 @@ export class AcpClient implements OpencodeClient {
         toolCall: p.toolCall as PermissionRequest['toolCall'],
         options: p.options as PermissionOption[],
       };
-      const handler = this.onPermissionRequest ?? ((r: PermissionRequest) => this.requestPermission(r));
-      handler(req).then((decision) => {
+      const sendDecision = (decision: string): void => {
         const resp: JsonRpcResponse = {
           jsonrpc: '2.0', id,
           result: { sessionId: p.sessionId, decision: { optionId: decision } },
         };
         this.send(resp as unknown as Record<string, unknown>);
-      }).catch(() => {});
+      };
+      const sendError = (error: unknown): void => {
+        const message = error instanceof Error ? error.message : String(error);
+        const resp: JsonRpcResponse = {
+          jsonrpc: '2.0', id,
+          error: { code: -32000, message },
+        };
+        this.send(resp as unknown as Record<string, unknown>);
+      };
+      const handler = this.onPermissionRequest ?? ((r: PermissionRequest) => this.requestPermission(r));
+      handler(req).then(sendDecision).catch((error: unknown) => {
+        console.error('[copsidian] permission request failed:', error);
+        this.requestPermission(req).then(sendDecision).catch(sendError);
+      });
     }
   }
 

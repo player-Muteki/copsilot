@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { buildMcpServers, parseSessionUpdate, extractSessionSnapshot, extractConfigMeta, mergeAvailableCommands } from './acp';
+import { describe, it, expect, vi } from 'vitest';
+import { AcpClient, CLIENT_VERSION, buildMcpServers, parseSessionUpdate, extractSessionSnapshot, extractConfigMeta, mergeAvailableCommands } from './acp';
 import type { SessionUpdate } from '../types';
 
 describe('parseSessionUpdate', () => {
@@ -292,3 +292,48 @@ describe('buildMcpServers', () => {
     expect(result).toEqual([]);
   });
 });
+
+
+describe('AcpClient server request handling', () => {
+  it('falls back to a reject decision when permission UI handler fails', async () => {
+    const client = new AcpClient('opencode');
+    const sent: unknown[] = [];
+    Reflect.set(client, 'send', (message: unknown) => {
+      sent.push(message);
+      return true;
+    });
+    client.onPermissionRequest = vi.fn().mockRejectedValue(new Error('ui unavailable'));
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    Reflect.get(client, 'handleServerRequest').call(client, {
+      method: 'request_permission',
+      params: {
+        sessionId: 's1',
+        toolCall: { kind: 'edit', title: 'Edit file' },
+        options: [
+          { optionId: 'allow', name: 'Allow', kind: 'allow_once' },
+          { optionId: 'reject', name: 'Reject', kind: 'reject_once' },
+        ],
+      },
+    }, 42);
+    await flushPromises();
+
+    expect(sent).toEqual([
+      {
+        jsonrpc: '2.0',
+        id: 42,
+        result: { sessionId: 's1', decision: { optionId: 'reject' } },
+      },
+    ]);
+    consoleSpy.mockRestore();
+  });
+
+  it('uses the current release version for ACP clientInfo', () => {
+    expect(CLIENT_VERSION).toBe('0.0.10');
+  });
+});
+
+
+function flushPromises(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
