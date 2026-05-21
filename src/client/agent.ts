@@ -8,6 +8,7 @@ import type {
   ModeOption,
   AcpResponse,
   SessionSnapshot,
+  McpServerConfig,
 } from '../types';
 import type { OpencodeClient, ClientHandlers } from './index';
 import type { SessionMeta } from '../types';
@@ -21,7 +22,7 @@ export class AgentRuntime implements OpencodeClient {
   isConnected(): boolean { return this.acp.isConnected(); }
   connect(): Promise<void> { return this.acp.connect(); }
   disconnect(): Promise<void> { return this.acp.disconnect(); }
-  createSession(cwd?: string): Promise<string> { return this.acp.createSession(cwd); }
+  createSession(cwd?: string, mcpServers?: McpServerConfig[]): Promise<string> { return this.acp.createSession(cwd, mcpServers); }
   loadSession(id: string, cwd?: string): Promise<void> { return this.acp.loadSession(id, cwd); }
   listSessions(cwd?: string): Promise<SessionMeta[]> { return this.acp.listSessions(cwd); }
   closeSession(id: string): Promise<void> { return this.acp.closeSession(id); }

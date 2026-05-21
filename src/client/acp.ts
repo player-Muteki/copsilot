@@ -11,6 +11,7 @@ import type {
   ModelOption,
   ModeOption,
   SessionSnapshot,
+  McpServerConfig,
 } from '../types';
 import type { OpencodeClient } from './index';
 import type { SessionMeta } from '../types';
@@ -31,6 +32,13 @@ interface JsonRpcResponse {
 }
 
 type RpcEntry = { resolve: (v: unknown) => void; reject: (e: Error) => void };
+
+export interface AcpMcpServer {
+  name: string;
+  command: string;
+  args: string[];
+  env: Array<{ name: string; value: string }>;
+}
 
 /** Fields common to all JSON-RPC message types received from the server. */
 interface JsonRpcIncoming {
@@ -128,8 +136,8 @@ export class AcpClient implements OpencodeClient {
     });
   }
 
-  async createSession(cwd?: string): Promise<string> {
-    const r = await this.request('session/new', { cwd: this.resolveCwd(cwd), mcpServers: [] }) as Record<string, unknown>;
+  async createSession(cwd?: string, mcpServers: McpServerConfig[] = []): Promise<string> {
+    const r = await this.request('session/new', { cwd: this.resolveCwd(cwd), mcpServers: buildMcpServers(mcpServers) }) as Record<string, unknown>;
     this.applySessionSnapshot(r);
     this.sessionId_ = (r.sessionId as string | undefined) ?? null;
     return this.sessionId_ ?? '';
@@ -502,4 +510,15 @@ export class AcpClient implements OpencodeClient {
     if (!/[\s"]/g.test(value)) return value;
     return `"${value.replace(/"/g, '\\"')}"`;
   }
+}
+
+export function buildMcpServers(servers: McpServerConfig[]): AcpMcpServer[] {
+  return servers
+    .filter((server) => server.enabled && server.name.trim() && server.command.trim())
+    .map((server) => ({
+      name: server.name.trim(),
+      command: server.command.trim(),
+      args: server.args.map((arg) => arg.trim()).filter(Boolean),
+      env: [],
+    }));
 }

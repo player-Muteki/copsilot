@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { AcpClient } from './acp';
+import { AcpClient, buildMcpServers } from './acp';
 
 function createClient(): AcpClient {
   return new (AcpClient as any)('opencode');
@@ -251,6 +251,28 @@ describe('AcpClient', () => {
       expect((client as any).currentModeId).toBe('build');
       expect((client as any).availableModes).toHaveLength(1);
       expect((client as any).availableModes[0].id).toBe('build');
+    });
+  });
+
+  describe('buildMcpServers', () => {
+    it('should include enabled servers with command and name', () => {
+      const result = buildMcpServers([
+        { id: '1', enabled: true, name: ' filesystem ', command: ' npx ', args: [' -y ', '', '@modelcontextprotocol/server-filesystem'] },
+      ]);
+
+      expect(result).toEqual([
+        { name: 'filesystem', command: 'npx', args: ['-y', '@modelcontextprotocol/server-filesystem'], env: [] },
+      ]);
+    });
+
+    it('should skip disabled or incomplete servers', () => {
+      const result = buildMcpServers([
+        { id: '1', enabled: false, name: 'off', command: 'npx', args: [] },
+        { id: '2', enabled: true, name: '', command: 'npx', args: [] },
+        { id: '3', enabled: true, name: 'empty', command: '', args: [] },
+      ]);
+
+      expect(result).toEqual([]);
     });
   });
 });

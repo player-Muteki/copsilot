@@ -10,6 +10,7 @@ import type {
   AcpResponse,
   SessionMeta,
   SessionSnapshot,
+  McpServerConfig,
 } from '../types';
 
 export interface ClientHandlers {
@@ -23,7 +24,7 @@ export interface OpencodeClient {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
 
-  createSession(cwd?: string): Promise<SessionId>;
+  createSession(cwd?: string, mcpServers?: McpServerConfig[]): Promise<SessionId>;
   loadSession(sessionId: SessionId, cwd?: string): Promise<void>;
   listSessions(cwd?: string): Promise<SessionMeta[]>;
   closeSession(sessionId: SessionId): Promise<void>;
