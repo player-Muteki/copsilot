@@ -4,6 +4,7 @@ import type { ChatRenderer } from '../view/renderer';
 import type { SyncEngine } from '../sync/engine';
 import type { SyncContext } from '../sync/templates';
 import type { SessionStore } from './session';
+import { t } from '../i18n/index';
 
 export interface StreamControllerDeps {
 	state: ChatState;
@@ -15,6 +16,7 @@ export interface StreamControllerDeps {
 	onModeUpdate?: (currentModeId: string | null, availableModes: ModeOption[]) => void;
 	onModelsUpdate?: (currentModelId: string | null, availableModels: ModelOption[]) => void;
 	onCommandsUpdate?: (commands: AvailableCommand[]) => void;
+	onSyncFailure?: (message: string) => void;
 }
 
 export class StreamController {
@@ -71,8 +73,15 @@ export class StreamController {
 						rawOutput: ch.rawOutput,
 						content: contentText,
 					};
-					this.deps.syncEngine.process(ctx).catch(e => {
+					this.deps.syncEngine.process(ctx).then((failures) => {
+						for (const failure of failures) {
+							this.deps.onSyncFailure?.(t().sync.ruleFailed
+								.replace('{rule}', failure.rule.toolName)
+								.replace('{error}', failure.error.message));
+						}
+					}).catch(e => {
 						console.error('[copsidian] sync failed:', e);
+						this.deps.onSyncFailure?.(e instanceof Error ? e.message : String(e));
 					});
 				}
 				break;

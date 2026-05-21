@@ -2,6 +2,11 @@ import type { Vault, TFile } from 'obsidian';
 import type { SyncRule } from '../types';
 import { ruleMatches, buildSyncNote } from './templates';
 
+export interface SyncFailure {
+  rule: SyncRule;
+  error: Error;
+}
+
 export class SyncEngine {
   constructor(private vault: Vault, private rules: SyncRule[]) {}
 
@@ -9,7 +14,8 @@ export class SyncEngine {
     return file instanceof Object && 'vault' in file && 'extension' in file;
   }
 
-  async process(ctx: import('./templates').SyncContext): Promise<void> {
+  async process(ctx: import('./templates').SyncContext): Promise<SyncFailure[]> {
+    const failures: SyncFailure[] = [];
     for (const rule of this.rules) {
       if (!ruleMatches(rule, ctx)) continue;
       try {
@@ -23,8 +29,10 @@ export class SyncEngine {
         }
       } catch (e) {
         console.error('[copsidian] sync rule failed:', rule.toolName, e);
+        failures.push({ rule, error: e instanceof Error ? e : new Error(String(e)) });
       }
     }
+    return failures;
   }
 
   private async ensureFolder(folder: string): Promise<void> {
