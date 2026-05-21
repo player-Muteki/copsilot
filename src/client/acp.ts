@@ -116,7 +116,6 @@ export class AcpClient implements OpencodeClient {
       clientCapabilities: {},
     });
     this.connected = true;
-    console.log('[copsidian] ACP connected');
   }
 
   async disconnect(): Promise<void> {
@@ -439,12 +438,10 @@ export class AcpClient implements OpencodeClient {
   private scheduleReconnect(): void {
     this.reconnectAttempts++;
     const delay = 2000 * this.reconnectAttempts; // Exponential backoff
-    console.log(`[copsidian] Scheduling reconnect attempt ${this.reconnectAttempts} in ${delay}ms`);
     setTimeout(() => {
       if (!this.connected && this.onReconnect) {
         this.onReconnect().then(() => {
           this.reconnectAttempts = 0;
-          console.log('[copsidian] Auto-reconnect successful');
         }).catch(() => {
           if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.scheduleReconnect();
