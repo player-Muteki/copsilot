@@ -174,10 +174,12 @@ describe('CopsidianSettingsTab locale refresh', () => {
 
     tab.display();
     expect(tab.containerEl.textContent).not.toContain('skill-writer');
+    expect(tab.containerEl.textContent).toContain('Loading runtime skills');
     await flushPromises();
     await flushPromises();
 
     expect(plugin.initClient).toHaveBeenCalled();
+    expect(plugin.getClient()?.closeSession).toHaveBeenCalledWith('settings-session');
     expect(tab.containerEl.textContent).toContain('skill-writer');
     expect([...tab.containerEl.querySelectorAll('select')]
       .some((select) => [...select.options].some((option) => option.value === 'openai/gpt'))).toBe(true);
@@ -203,6 +205,21 @@ function createPlugin(
     commonModels: [],
     language: 'en',
   };
+  const client = {
+    createSession: vi.fn().mockResolvedValue('settings-session'),
+    closeSession: vi.fn().mockResolvedValue(undefined),
+    getAvailableAgents: vi.fn().mockResolvedValue(runtimeOptions.availableModes ?? []),
+    getAvailableModels: vi.fn().mockResolvedValue(runtimeOptions.availableModels ?? []),
+    getAvailableCommands: vi.fn().mockResolvedValue(runtimeOptions.availableCommands ?? []),
+    getSessionSnapshot: vi.fn(() => ({
+      configOptions: [],
+      availableCommands: snapshot.availableCommands ?? [],
+      availableModels: snapshot.availableModels ?? [],
+      availableModes: snapshot.availableModes ?? [],
+      currentModelId: null,
+      currentModeId: null,
+    })),
+  };
   return {
     app: {
       workspace: {
@@ -214,20 +231,7 @@ function createPlugin(
     settings,
     savePluginData: vi.fn().mockResolvedValue(undefined),
     initClient: vi.fn().mockResolvedValue(true),
-    getClient: vi.fn(() => ({
-      createSession: vi.fn().mockResolvedValue('settings-session'),
-      getAvailableAgents: vi.fn().mockResolvedValue(runtimeOptions.availableModes ?? []),
-      getAvailableModels: vi.fn().mockResolvedValue(runtimeOptions.availableModels ?? []),
-      getAvailableCommands: vi.fn().mockResolvedValue(runtimeOptions.availableCommands ?? []),
-      getSessionSnapshot: vi.fn(() => ({
-        configOptions: [],
-        availableCommands: snapshot.availableCommands ?? [],
-        availableModels: snapshot.availableModels ?? [],
-        availableModes: snapshot.availableModes ?? [],
-        currentModelId: null,
-        currentModeId: null,
-      })),
-    })),
+    getClient: vi.fn(() => client),
     client: null,
   } as unknown as CopsidianPlugin;
 }

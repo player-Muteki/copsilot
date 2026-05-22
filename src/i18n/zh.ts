@@ -166,6 +166,7 @@ const zh: Locale = {
       heading: '自定义技能',
       empty: '暂无自定义技能',
       loadedHeading: '已载入技能',
+      loading: '正在载入运行时技能…',
       loadedEmpty: '未载入运行时技能',
       add: '+ 添加自定义技能',
       label: '技能：{name}',
@@ -182,6 +183,7 @@ const zh: Locale = {
     commonModels: {
       heading: '常用模型',
       desc: '只有选中的模型会出现在聊天工具栏。不选择则显示全部模型。',
+      loading: '正在载入运行时模型…',
       empty: '未载入模型',
     },
     permissionMode: {

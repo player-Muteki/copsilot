@@ -164,6 +164,7 @@ const en = {
       heading: 'Custom Skills',
       empty: 'No custom skills configured',
       loadedHeading: 'Loaded Skills',
+      loading: 'Loading runtime skills…',
       loadedEmpty: 'No runtime skills loaded',
       add: '+ Add Custom Skill',
       label: 'Skill: {name}',
@@ -180,6 +181,7 @@ const en = {
     commonModels: {
       heading: 'Common Models',
       desc: 'Only selected models appear in the chat toolbar. Select none to show all models.',
+      loading: 'Loading runtime models…',
       empty: 'No models loaded',
     },
     permissionMode: {

@@ -173,7 +173,9 @@ export class CopsidianSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl).setName(labels.customSkills.loadedHeading).setHeading();
 
-    if (availableSkills.length === 0) {
+    if (this.runtimeOptionsLoading && !this.runtimeOptionsLoaded) {
+      new Setting(containerEl).setName(labels.customSkills.loading);
+    } else if (availableSkills.length === 0) {
       new Setting(containerEl).setName(labels.customSkills.loadedEmpty);
     }
 
@@ -213,7 +215,9 @@ export class CopsidianSettingsTab extends PluginSettingTab {
       .setDesc(labels.commonModels.desc)
       .setHeading();
 
-    if (availableModels.length === 0) {
+    if (this.runtimeOptionsLoading && !this.runtimeOptionsLoaded) {
+      new Setting(containerEl).setName(labels.commonModels.loading);
+    } else if (availableModels.length === 0) {
       new Setting(containerEl).setName(labels.commonModels.empty);
     }
 
@@ -593,7 +597,8 @@ export class CopsidianSettingsTab extends PluginSettingTab {
 
       let snapshot = client.getSessionSnapshot();
       if (snapshot.availableModes.length === 0 && snapshot.availableModels.length === 0 && snapshot.availableCommands.length === 0) {
-        await client.createSession(undefined, this.plugin.settings.mcpServers).catch(() => '');
+        const sessionId = await client.createSession(undefined, this.plugin.settings.mcpServers).catch(() => '');
+        if (sessionId) await client.closeSession(sessionId).catch(() => {});
         client = this.plugin.getClient();
         if (!client) return;
         snapshot = client.getSessionSnapshot();
