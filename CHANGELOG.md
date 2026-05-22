@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.0.11 - 2026-05-22
+
+### Added
+- Add local custom agents and reusable custom skills with settings management and prompt injection.
+- Load runtime agents, models, and skills/commands in Settings, and manage common models there.
+- Limit the chat model selector to configured common models when common models are selected.
+
+### Changed
+- Apply configured default agent, model, and effort to newly created OpenCode sessions.
+
+### Tested
+- Add regression coverage for custom agent validation, prompt composition, common model filtering, runtime settings loading, and default session options.
+
 ## 0.0.10 - 2026-05-21
 
 ### Fixed
