@@ -18,7 +18,7 @@ import type { SessionMeta } from '../types';
 import type { AcpResponse } from '../types';
 import { t } from '../i18n/index';
 
-export const CLIENT_VERSION = '0.0.10';
+export const CLIENT_VERSION = '0.0.13';
 
 interface JsonRpcRequest {
   jsonrpc: '2.0';
