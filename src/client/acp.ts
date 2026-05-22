@@ -291,8 +291,8 @@ export class AcpClient implements OpencodeClient {
     return this.sessionId_ ?? '';
   }
 
-  async loadSession(id: string, cwd?: string): Promise<void> {
-    const r = await this.request('session/load', { sessionId: id, cwd: this.resolveCwd(cwd) }) as Record<string, unknown>;
+  async loadSession(id: string, cwd?: string, mcpServers: McpServerConfig[] = []): Promise<void> {
+    const r = await this.request('session/load', { sessionId: id, cwd: this.resolveCwd(cwd), mcpServers: buildMcpServers(mcpServers) }) as Record<string, unknown>;
     this.applySessionSnapshot(r);
     this.sessionId_ = id;
   }

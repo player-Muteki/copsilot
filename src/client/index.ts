@@ -25,7 +25,7 @@ export interface OpencodeClient {
   disconnect(): Promise<void>;
 
   createSession(cwd?: string, mcpServers?: McpServerConfig[]): Promise<SessionId>;
-  loadSession(sessionId: SessionId, cwd?: string): Promise<void>;
+  loadSession(sessionId: SessionId, cwd?: string, mcpServers?: McpServerConfig[]): Promise<void>;
   listSessions(cwd?: string): Promise<SessionMeta[]>;
   closeSession(sessionId: SessionId): Promise<void>;
   forkSession(sessionId: SessionId, cwd?: string): Promise<SessionId>;

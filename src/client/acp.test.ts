@@ -293,6 +293,28 @@ describe('buildMcpServers', () => {
   });
 });
 
+describe('AcpClient session loading', () => {
+  it('passes enabled MCP servers when loading a session', async () => {
+    const client = new AcpClient('opencode');
+    const request = vi.fn().mockResolvedValue({ sessionId: 's1' });
+    Reflect.set(client, 'request', request);
+
+    await client.loadSession('s1', '/vault', [
+      { id: 'fs', enabled: true, name: ' filesystem ', command: ' npx ', args: [' -y ', '', '@modelcontextprotocol/server-filesystem'] },
+      { id: 'off', enabled: false, name: 'disabled', command: 'npx', args: [] },
+    ]);
+
+    expect(request).toHaveBeenCalledWith('session/load', {
+      sessionId: 's1',
+      cwd: '/vault',
+      mcpServers: [
+        { name: 'filesystem', command: 'npx', args: ['-y', '@modelcontextprotocol/server-filesystem'], env: [] },
+      ],
+    });
+    expect(client.getCurrentSessionId()).toBe('s1');
+  });
+});
+
 
 describe('AcpClient server request handling', () => {
   it('falls back to a reject decision when permission UI handler fails', async () => {
