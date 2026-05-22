@@ -6,6 +6,10 @@ export const MarkdownRenderer = {
 
 export class Component {}
 
+export class Plugin extends Component {
+  app: unknown;
+}
+
 export class ItemView extends Component {
   contentEl: HTMLDivElement;
 

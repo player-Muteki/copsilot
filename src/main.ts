@@ -41,6 +41,7 @@ export default class CopsidianPlugin extends Plugin {
     setLocale(this.settings.language);
 
     this.registerView(VIEW_TYPE, (leaf) => new CopsidianView(leaf, this));
+    this.deduplicateCopsidianLeaves();
     this.addRibbonIcon('terminal-square', 'Open Copsidian', () => this.activateView());
     this.addSettingTab(new CopsidianSettingsTab(this));
     this.addCommand({
@@ -165,10 +166,11 @@ export default class CopsidianPlugin extends Plugin {
   }
 
   async activateView(): Promise<void> {
-    const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE)[0];
+    const existing = this.deduplicateCopsidianLeaves();
     if (existing) {
       await existing.setViewState({ type: VIEW_TYPE, active: true });
       this.app.workspace.revealLeaf(existing);
+      this.deduplicateCopsidianLeaves();
       return;
     }
 
@@ -184,6 +186,16 @@ export default class CopsidianPlugin extends Plugin {
     if (!leaf) return;
     await leaf.setViewState({ type: VIEW_TYPE, active: true });
     this.app.workspace.revealLeaf(leaf);
+    this.deduplicateCopsidianLeaves();
+  }
+
+  private deduplicateCopsidianLeaves(): import('obsidian').WorkspaceLeaf | null {
+    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE);
+    const [first, ...duplicates] = leaves;
+    for (const leaf of duplicates) {
+      leaf.detach();
+    }
+    return first ?? null;
   }
 
   async initClient(): Promise<boolean> {
