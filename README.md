@@ -40,7 +40,7 @@ Existing AI plugins for Obsidian fall into two categories: those that require th
 
 Language changes apply immediately to the settings tab and open Copsidian views, including notices, toolbar labels, inline edit UI, and runtime error messages. The selected language persists across plugin restarts.
 
-**MCP Servers** — Configure local MCP servers in Settings and attach them automatically when creating new OpenCode sessions.
+**MCP Servers** — Configure local MCP servers in Settings and attach them automatically when creating or restoring OpenCode sessions.
 
 ## Requirements
 
@@ -107,6 +107,17 @@ Language changes apply immediately to the settings tab and open Copsidian views,
 | Auto Connect | Connect to OpenCode on Obsidian startup | `true` |
 
 Runtime agents, models, and available commands/skills load automatically when Settings opens. If OpenCode has not reported runtime options yet, Copsidian briefly opens and closes a metadata session to hydrate the lists, then refreshes Settings.
+
+## Development QA
+
+Real Obsidian integration checks use the local `copsidian-qa-vault/` under this repository. Build first, keep that vault out of commits, then run:
+
+```bash
+npm run build
+npm run qa:obsidian
+```
+
+For release packaging, run `npm run release` followed by `npm run release:check` to verify generated release artifacts.
 
 ## Keyboard Shortcuts
 
@@ -259,7 +270,7 @@ Licensed under the [MIT License](LICENSE).
 
 语言切换会立即应用到设置页和已打开的 Copsidian 视图，包括通知、工具栏文案、行内编辑界面和运行时错误提示。所选语言会在插件重启后保持生效。
 
-**MCP 服务器** — 在设置中配置本地 MCP 服务器，新建 OpenCode 会话时自动附加。
+**MCP 服务器** — 在设置中配置本地 MCP 服务器，新建或恢复 OpenCode 会话时自动附加。
 
 ## 系统要求
 
@@ -326,6 +337,17 @@ Licensed under the [MIT License](LICENSE).
 | 自动连接 | Obsidian 启动时自动连接 OpenCode | `true` |
 
 设置页打开时会自动载入运行时 Agent、模型和可用命令/技能。如果 OpenCode 尚未返回运行时选项，Copsidian 会短暂创建并关闭一个元数据会话来触发列表加载，然后刷新设置页。
+
+## 开发 QA
+
+真实 Obsidian 集成检查默认使用本仓库下的本地 `copsidian-qa-vault/`。先构建，确保该 vault 不提交到仓库，然后运行：
+
+```bash
+npm run build
+npm run qa:obsidian
+```
+
+发布打包时，先运行 `npm run release`，再运行 `npm run release:check` 校验生成的发布产物。
 
 ## 键盘快捷键
 
