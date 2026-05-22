@@ -108,14 +108,7 @@ Language changes apply immediately to the settings tab and open Copsidian views,
 
 Runtime agents, models, and available commands/skills load automatically when Settings opens. If OpenCode has not reported runtime options yet, Copsidian briefly opens and closes a metadata session to hydrate the lists, then refreshes Settings.
 
-## Development QA
-
-Real Obsidian integration checks use the local `copsidian-qa-vault/` under this repository. Build first, keep that vault out of commits, then run:
-
-```bash
-npm run build
-npm run qa:obsidian
-```
+## Release Checks
 
 For release packaging, run `npm run release` followed by `npm run release:check` to verify generated release artifacts.
 
@@ -338,14 +331,7 @@ Licensed under the [MIT License](LICENSE).
 
 设置页打开时会自动载入运行时 Agent、模型和可用命令/技能。如果 OpenCode 尚未返回运行时选项，Copsidian 会短暂创建并关闭一个元数据会话来触发列表加载，然后刷新设置页。
 
-## 开发 QA
-
-真实 Obsidian 集成检查默认使用本仓库下的本地 `copsidian-qa-vault/`。先构建，确保该 vault 不提交到仓库，然后运行：
-
-```bash
-npm run build
-npm run qa:obsidian
-```
+## 发布检查
 
 发布打包时，先运行 `npm run release`，再运行 `npm run release:check` 校验生成的发布产物。
 
