@@ -1,8 +1,22 @@
+// @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
 import CopsidianPlugin from './main';
 import { VIEW_TYPE } from './types';
 
 describe('CopsidianPlugin view activation', () => {
+  it('does not connect to OpenCode while loading the plugin', async () => {
+    const workspace = {
+      getLeavesOfType: vi.fn(() => []),
+    };
+    const plugin = createPlugin(workspace);
+    plugin.settings.autoConnect = true;
+    plugin.initClient = vi.fn().mockResolvedValue(true);
+
+    await plugin.onload();
+
+    expect(plugin.initClient).not.toHaveBeenCalled();
+  });
+
   it('reuses one Copsidian leaf and detaches duplicates', async () => {
     const leaves: ReturnType<typeof createLeaf>[] = [];
     const existing = createLeaf();
@@ -52,6 +66,20 @@ function createLeaf(onDetach?: () => void) {
 
 function createPlugin(workspace: unknown): CopsidianPlugin {
   const plugin = Object.create(CopsidianPlugin.prototype) as CopsidianPlugin;
-  Object.assign(plugin, { app: { workspace } });
+  Object.assign(plugin, {
+    app: { workspace },
+    settings: {
+      language: 'en',
+      autoConnect: false,
+    },
+    sessions: new Map(),
+    activeSessionId: null,
+    loadPluginData: vi.fn().mockResolvedValue(undefined),
+    registerView: vi.fn(),
+    deduplicateCopsidianLeaves: CopsidianPlugin.prototype['deduplicateCopsidianLeaves'],
+    addRibbonIcon: vi.fn(),
+    addSettingTab: vi.fn(),
+    addCommand: vi.fn(),
+  });
   return plugin;
 }

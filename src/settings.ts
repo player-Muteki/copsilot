@@ -48,7 +48,6 @@ export class CopsidianSettingsTab extends PluginSettingTab {
     const availableAgents = this.getAvailableAgents();
     const availableModels = this.getAvailableModels();
     const availableSkills = this.getAvailableSkills();
-    this.loadRuntimeOptions();
 
     // ── Connection ──
     new Setting(containerEl).setName(labels.connection).setHeading();
@@ -79,7 +78,7 @@ export class CopsidianSettingsTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName(labels.autostart.name)
       .setDesc(labels.autostart.desc)
-      .addToggle((t) => t.setValue(s.autoConnect ?? true)
+      .addToggle((t) => t.setValue(s.autoConnect ?? false)
         .onChange(async (v) => { s.autoConnect = v; await this.save(); }));
 
     this.addDiagnosticsBlock(containerEl);
@@ -433,7 +432,7 @@ export class CopsidianSettingsTab extends PluginSettingTab {
     results.push({ label: labels.path, ok: pathStatus.ok, detail: pathStatus.detail });
 
     const existingClient = this.plugin.getClient();
-    const connected = existingClient?.isConnected() ?? await this.plugin.initClient();
+    const connected = existingClient?.isConnected() ? true : await this.plugin.initClient();
     const client = this.plugin.getClient();
     results.push({
       label: labels.connection,
@@ -691,37 +690,39 @@ export class CopsidianSettingsTab extends PluginSettingTab {
 
   private getAvailableAgents(): ModeOption[] {
     if (this.runtimeOptionsLoaded) return this.runtimeAgents;
-    return this.plugin.getClient()?.getSessionSnapshot().availableModes ?? [];
+    try {
+      return this.plugin.getClient()?.getSessionSnapshot().availableModes ?? [];
+    } catch {
+      return [];
+    }
   }
 
   private getAvailableModels(): ModelOption[] {
     if (this.runtimeOptionsLoaded) return this.runtimeModels;
-    return this.plugin.getClient()?.getSessionSnapshot().availableModels ?? [];
+    try {
+      return this.plugin.getClient()?.getSessionSnapshot().availableModels ?? [];
+    } catch {
+      return [];
+    }
   }
 
   private getAvailableSkills(): AvailableCommand[] {
     if (this.runtimeOptionsLoaded) return this.runtimeSkills;
-    return this.plugin.getClient()?.getSessionSnapshot().availableCommands ?? [];
+    try {
+      return this.plugin.getClient()?.getSessionSnapshot().availableCommands ?? [];
+    } catch {
+      return [];
+    }
   }
 
   private async loadRuntimeOptions(): Promise<void> {
     if (this.runtimeOptionsLoading || this.runtimeOptionsLoaded) return;
     this.runtimeOptionsLoading = true;
     try {
-      const connected = await this.plugin.initClient();
-      if (!connected) return;
+      const client = this.plugin.getClient();
+      if (!client?.isConnected()) return;
 
-      let client = this.plugin.getClient();
-      if (!client) return;
-
-      let snapshot = client.getSessionSnapshot();
-      if (snapshot.availableModes.length === 0 && snapshot.availableModels.length === 0 && snapshot.availableCommands.length === 0) {
-        const sessionId = await client.createSession(undefined, this.plugin.settings.mcpServers).catch(() => '');
-        if (sessionId) await client.closeSession(sessionId).catch(() => {});
-        client = this.plugin.getClient();
-        if (!client) return;
-        snapshot = client.getSessionSnapshot();
-      }
+      const snapshot = client.getSessionSnapshot();
 
       const [agents, models, skills] = await Promise.all([
         client.getAvailableAgents(),

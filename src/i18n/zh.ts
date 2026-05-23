@@ -137,8 +137,8 @@ const zh: Locale = {
       failed: '重新连接失败',
     },
     autostart: {
-      name: '自动启动 OpenCode',
-      desc: 'Obsidian 启动时连接 OpenCode',
+      name: '在 Copsidian 中自动连接',
+      desc: '仅在 Copsidian 用户操作时连接 OpenCode，不在 Obsidian 启动时连接',
     },
     diagnostics: {
       heading: '诊断',

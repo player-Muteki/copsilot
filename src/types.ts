@@ -217,7 +217,7 @@ export const DEFAULT_SETTINGS: CopsidianSettings = {
   customAgents: [],
   activeCustomAgentId: '',
   commonModels: [],
-  autoConnect: true,
+  autoConnect: false,
   autoScrollEnabled: true,
   maxSessionMessages: 200,
   sessionRetentionDays: 30,

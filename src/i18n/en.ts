@@ -135,8 +135,8 @@ const en = {
       failed: 'Failed to reconnect',
     },
     autostart: {
-      name: 'Autostart OpenCode',
-      desc: 'Connect to OpenCode when Obsidian starts',
+      name: 'Auto-connect in Copsidian',
+      desc: 'Connect to OpenCode from Copsidian user actions, never during Obsidian startup',
     },
     diagnostics: {
       heading: 'Diagnostics',

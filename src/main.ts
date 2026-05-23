@@ -54,9 +54,6 @@ export default class CopsidianPlugin extends Plugin {
       name: 'AI Edit Selection',
       editorCallback: (editor, view) => this.aiEditSelection(editor, view),
     });
-    if (this.settings.autoConnect !== false) {
-      void this.initClient();
-    }
   }
 
   override onunload(): void { this.client?.disconnect(); }

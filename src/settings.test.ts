@@ -181,7 +181,7 @@ describe('CopsidianSettingsTab locale refresh', () => {
     await flushPromises();
     await flushPromises();
 
-    expect(plugin.initClient).toHaveBeenCalled();
+    expect(plugin.initClient).not.toHaveBeenCalled();
     expect(tab.containerEl.textContent).toContain('Pass: ACP connection');
     expect(tab.containerEl.textContent).toContain('Connected to OpenCode');
     expect(tab.containerEl.textContent).toContain('Pass: Runtime metadata');
@@ -303,7 +303,7 @@ describe('CopsidianSettingsTab locale refresh', () => {
     expect(tab.containerEl.textContent).not.toContain('Run Diagnostics');
   });
 
-  it('actively loads runtime options after settings opens with an empty snapshot', async () => {
+  it('does not connect or create metadata sessions when settings opens with an empty snapshot', async () => {
     setLocale('en');
     const plugin = createPlugin({ refreshLocale: vi.fn() }, {}, {
       availableModes: [{ id: 'docs', name: 'Docs' }],
@@ -314,15 +314,14 @@ describe('CopsidianSettingsTab locale refresh', () => {
 
     tab.display();
     expect(tab.containerEl.textContent).not.toContain('skill-writer');
-    expect(tab.containerEl.textContent).toContain('Loading runtime skills');
+    expect(tab.containerEl.textContent).toContain('No runtime skills loaded');
     await flushPromises();
     await flushPromises();
 
-    expect(plugin.initClient).toHaveBeenCalled();
-    expect(plugin.getClient()?.closeSession).toHaveBeenCalledWith('settings-session');
-    expect(tab.containerEl.textContent).toContain('skill-writer');
-    expect([...tab.containerEl.querySelectorAll('select')]
-      .some((select) => [...select.options].some((option) => option.value === 'openai/gpt'))).toBe(true);
+    expect(plugin.initClient).not.toHaveBeenCalled();
+    expect(plugin.getClient()?.createSession).not.toHaveBeenCalled();
+    expect(plugin.getClient()?.closeSession).not.toHaveBeenCalled();
+    expect(tab.containerEl.textContent).not.toContain('skill-writer');
   });
 });
 

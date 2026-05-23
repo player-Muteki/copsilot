@@ -104,9 +104,9 @@ Language changes apply immediately to the settings tab and open Copsidian views,
 | Sync Rules | Map tool call results to vault notes (tool → folder → filename template) | — |
 | MCP Servers | Local stdio MCP server definitions (name → command → args) passed to new OpenCode sessions | — |
 | Language | UI language (`en` / `zh`) | `en` |
-| Auto Connect | Connect to OpenCode on Obsidian startup | `true` |
+| Auto Connect | Connect to OpenCode from Copsidian user actions, not during Obsidian startup | `false` |
 
-Runtime agents, models, and available commands/skills load automatically when Settings opens. If OpenCode has not reported runtime options yet, Copsidian briefly opens and closes a metadata session to hydrate the lists, then refreshes Settings.
+Runtime agents, models, and available commands/skills load from an existing OpenCode connection or after an explicit reconnect. Opening Settings does not start OpenCode or create a metadata session.
 
 ## Release Checks
 
@@ -340,9 +340,9 @@ Licensed under the [MIT License](LICENSE).
 | 同步规则 | 将工具调用结果映射为 Vault 笔记（工具 → 文件夹 → 文件名模板） | — |
 | MCP 服务器 | 本地 stdio MCP 服务器定义（名称 → 命令 → 参数），用于新建 OpenCode 会话 | — |
 | 界面语言 | UI 语言（`en` / `zh`） | `en` |
-| 自动连接 | Obsidian 启动时自动连接 OpenCode | `true` |
+| 自动连接 | 在 Copsidian 用户操作时连接 OpenCode，而非 Obsidian 启动时 | `false` |
 
-设置页打开时会自动载入运行时 Agent、模型和可用命令/技能。如果 OpenCode 尚未返回运行时选项，Copsidian 会短暂创建并关闭一个元数据会话来触发列表加载，然后刷新设置页。
+运行时 Agent、模型和可用命令/技能从已有的 OpenCode 连接中加载，或在手动重连后加载。打开设置页不会启动 OpenCode 或创建元数据会话。
 
 ## 发布检查
 

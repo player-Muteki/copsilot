@@ -57,6 +57,46 @@ describe('CopsidianView inline edit preview', () => {
 });
 
 describe('CopsidianView runtime session sync', () => {
+  it('opens without waiting for OpenCode or creating a session', async () => {
+    setLocale('en');
+    const plugin = createPlugin();
+    const view = createView(plugin);
+
+    await view.onOpen();
+
+    expect(view.contentEl.querySelector('.copsidian-header')).not.toBeNull();
+    expect(view.contentEl.querySelector('.copsidian-input')).not.toBeNull();
+    expect(view.contentEl.querySelector('.copsidian-welcome')).not.toBeNull();
+    expect(plugin.waitForClient).not.toHaveBeenCalled();
+    expect(plugin.initClient).not.toHaveBeenCalled();
+    expect(plugin.getClient()).toBeNull();
+  });
+
+  it('connects and creates a runtime session when sending the first message', async () => {
+    setLocale('en');
+    const client = createClient();
+    let plugin: CopsidianPlugin;
+    plugin = createPlugin({
+      initClient: vi.fn().mockImplementation(async () => {
+        plugin.getClient = vi.fn(() => client) as never;
+        return true;
+      }),
+      settings: { defaultAgent: 'plan', defaultModel: 'openai/gpt', defaultEffort: 'medium' },
+    });
+    const view = createView(plugin);
+    await view.onOpen();
+
+    await Reflect.get(view, 'send').call(view, 'hello', []);
+
+    expect(plugin.initClient).toHaveBeenCalledTimes(1);
+    expect(client.createSession).toHaveBeenCalledWith('/vault', []);
+    expect(client.setMode).toHaveBeenCalledWith('runtime-session', 'plan');
+    expect(client.setModel).toHaveBeenCalledWith('runtime-session', 'openai/gpt');
+    expect(client.setConfigOption).toHaveBeenCalledWith('runtime-session', 'effort', 'medium');
+    expect(client.sendMessage).toHaveBeenCalled();
+    expect(plugin.savePluginData).toHaveBeenCalled();
+  });
+
   it('loads restored sessions with configured MCP servers', async () => {
     const mcpServers = [
       { id: 'fs', enabled: true, name: 'filesystem', command: 'npx', args: ['-y', '@modelcontextprotocol/server-filesystem'] },
@@ -86,15 +126,71 @@ describe('CopsidianView cleanup', () => {
 });
 
 function createView(plugin = createPlugin()): CopsidianView {
-  return new CopsidianView({} as never, plugin);
+  const view = new CopsidianView({} as never, plugin);
+  Reflect.set(view, 'registerEvent', vi.fn());
+  return view;
 }
 
-function createPlugin(): CopsidianPlugin {
+function createPlugin(overrides: {
+  client?: ReturnType<typeof createClient> | null;
+  initClient?: ReturnType<typeof vi.fn>;
+  settings?: Record<string, unknown>;
+} = {}): CopsidianPlugin {
+  const client = overrides.client ?? null;
   return {
-    app: { vault: {} },
-    settings: { maxNoteSize: 8000, syncRules: [] },
-    getClient: () => null,
+    app: {
+      vault: { adapter: { getBasePath: () => '/vault' } },
+      workspace: {
+        getLeavesOfType: vi.fn(() => []),
+        getMostRecentLeaf: vi.fn(() => null),
+        on: vi.fn(() => ({ unload: vi.fn() })),
+      },
+    },
+    settings: {
+      maxNoteSize: 8000,
+      syncRules: [],
+      mcpServers: [],
+      defaultAgent: 'build',
+      defaultModel: '',
+      defaultEffort: 'default',
+      systemPrompt: '',
+      customAgents: [],
+      customSkills: [],
+      activeCustomAgentId: '',
+      commonModels: [],
+      autoScrollEnabled: true,
+      ...(overrides.settings ?? {}),
+    },
+    sessions: new Map(),
+    activeSessionId: null,
+    loadPluginData: vi.fn().mockResolvedValue(undefined),
+    savePluginData: vi.fn().mockResolvedValue(undefined),
+    waitForClient: vi.fn().mockResolvedValue(false),
+    initClient: overrides.initClient ?? vi.fn().mockResolvedValue(Boolean(client)),
+    getClient: vi.fn(() => client),
   } as unknown as CopsidianPlugin;
+}
+
+function createClient() {
+  return {
+    isConnected: vi.fn(() => true),
+    getCurrentSessionId: vi.fn(() => undefined),
+    loadSession: vi.fn().mockResolvedValue(undefined),
+    createSession: vi.fn().mockResolvedValue('runtime-session'),
+    setMode: vi.fn().mockResolvedValue(undefined),
+    setModel: vi.fn().mockResolvedValue(undefined),
+    setConfigOption: vi.fn().mockResolvedValue([]),
+    sendMessage: vi.fn().mockResolvedValue({ stopReason: 'end_turn' }),
+    getSessionSnapshot: vi.fn(() => ({
+      configOptions: [],
+      availableCommands: [],
+      availableModels: [],
+      availableModes: [],
+      currentModelId: null,
+      currentModeId: null,
+    })),
+    setClientHandlers: vi.fn(),
+  };
 }
 
 function createEditor(): { replaceSelection: ReturnType<typeof vi.fn> } {

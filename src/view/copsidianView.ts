@@ -273,41 +273,20 @@ export class CopsidianView extends ItemView {
 			onSyncFailure: (message) => this.renderer.addError(message),
 		});
 
-		// Ensure a session exists before rendering
-		const clientReady = await this.plugin.waitForClient();
-		this.state.isConnected = clientReady;
-		if (!clientReady) {
-			this.handleDisconnect();
-		}
-		if (clientReady && !this.state.sessionId) {
-			try {
-				const c = this.plugin.getClient();
-				if (c) {
-					this.state.sessionId = await c.createSession(this.getVaultCwd(), this.plugin.settings.mcpServers);
-					await applyDefaultSessionSettings(c, this.state.sessionId, this.plugin.settings);
-					this.sessionStore.getOrCreate(this.state.sessionId);
-					this.sessionStore.setActive(this.state.sessionId);
-					await this.sessionStore.save();
-				}
-			} catch (e) {
-				console.error('[copsidian] session init:', e);
-			}
-		}
-
-		try {
-			await this.syncRuntimeSession(this.state.sessionId);
-		} catch (e) {
-			console.error('[copsidian] session sync:', e);
+		const connectedClient = this.plugin.getClient();
+		this.state.isConnected = connectedClient?.isConnected() ?? false;
+		if (this.state.isConnected) {
+			this.bindClientHandlers();
+			void this.syncRuntimeSession(this.state.sessionId).catch((e) => {
+				console.error('[copsidian] session sync:', e);
+			});
 		}
 
 		// Restore previous messages if any
 		await this.restoreSession();
 
-		// Load toolbar options
+		// Load toolbar options when an ACP client is already available.
 		this.loadToolbarOptions();
-
-		// Watch for ACP disconnection and auto-reconnect
-		this.bindClientHandlers();
 
 		// Show welcome page if no messages
 		this.maybeShowWelcome();
@@ -705,10 +684,11 @@ export class CopsidianView extends ItemView {
 	}
 
 	private async newSession(): Promise<void> {
+		await this.sessionStore.save();
+		const connected = await this.ensureClientConnected();
+		if (!connected) return;
 		const c = this.plugin.getClient();
 		if (!c) return;
-
-		await this.sessionStore.save();
 
 		try {
 			await this.cancelActiveGeneration();
@@ -742,9 +722,10 @@ export class CopsidianView extends ItemView {
 	// ── Sending ──
 
 	private async send(text: string, refs: ContextRef[]): Promise<void> {
+		if (this.busy) return;
+		const sessionId = await this.ensureRuntimeSession();
 		const c = this.plugin.getClient();
-		const sessionId = this.state.sessionId;
-		if (!c || !sessionId || this.busy) return;
+		if (!c || !sessionId) return;
 		const inlineEdit = this.pendingInlineEdit;
 		if (!inlineEdit) this.hideInlineEditDiff();
 
@@ -820,8 +801,8 @@ export class CopsidianView extends ItemView {
 	}
 
 	private async executeBuiltIn(name: string, _args: string): Promise<void> {
+		const sessionId = await this.ensureRuntimeSession();
 		const c = this.plugin.getClient();
-		const sessionId = this.state.sessionId;
 		if (!c || !sessionId) return;
 
 		if (name === 'compact') {
@@ -959,6 +940,54 @@ export class CopsidianView extends ItemView {
 			this.filterCommonModelOptions(models.map(m => ({ value: m.modelId, label: m.name }))),
 			modelId ?? undefined,
 		);
+	}
+
+	private async ensureClientConnected(): Promise<boolean> {
+		const existing = this.plugin.getClient();
+		if (existing?.isConnected()) {
+			this.state.isConnected = true;
+			this.bindClientHandlers();
+			this.hideReconnectBtn();
+			this.updateWelcomeStatus();
+			return true;
+		}
+
+		const connected = await this.plugin.initClient();
+		this.state.isConnected = connected;
+		if (!connected) {
+			this.handleDisconnect();
+			return false;
+		}
+
+		this.bindClientHandlers();
+		this.hideReconnectBtn();
+		this.updateWelcomeStatus();
+		return true;
+	}
+
+	private async ensureRuntimeSession(): Promise<string | null> {
+		if (!(await this.ensureClientConnected())) return null;
+		const client = this.plugin.getClient();
+		if (!client) return null;
+
+		if (this.state.sessionId) {
+			await this.syncRuntimeSession(this.state.sessionId);
+			this.loadToolbarOptions();
+			return this.state.sessionId;
+		}
+
+		try {
+			this.state.sessionId = await client.createSession(this.getVaultCwd(), this.plugin.settings.mcpServers);
+			await applyDefaultSessionSettings(client, this.state.sessionId, this.plugin.settings);
+			this.sessionStore.getOrCreate(this.state.sessionId);
+			this.sessionStore.setActive(this.state.sessionId);
+			await this.sessionStore.save();
+			this.loadToolbarOptions();
+			return this.state.sessionId;
+		} catch (e) {
+			console.error('[copsidian] session init:', e);
+			return null;
+		}
 	}
 
 	loadToolbarOptions(): void {
