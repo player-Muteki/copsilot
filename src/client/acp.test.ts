@@ -345,8 +345,3 @@ describe('AcpClient server request handling', () => {
     expect(CLIENT_VERSION).toBe('0.0.18');
   });
 });
-
-
-function flushPromises(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
-}
