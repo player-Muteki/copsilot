@@ -1,5 +1,5 @@
-import { spawn, type ChildProcess } from 'child_process';
 import { existsSync } from 'fs';
+import { AcpSubprocess, type AcpSubprocessLaunchSpec } from './AcpSubprocess';
 import * as readline from 'readline';
 import { delimiter, extname } from 'path';
 import type {
@@ -211,7 +211,7 @@ interface JsonRpcIncoming {
 }
 
 export class AcpClient implements OpencodeClient {
-  private process: ChildProcess | null = null;
+  private subprocess: AcpSubprocess | null = null;
   private connected = false;
   private agentCapabilities: Record<string, unknown> | null = null;
   private nextId = 0;
@@ -252,30 +252,35 @@ export class AcpClient implements OpencodeClient {
     const cwd = this.cwd ?? process.cwd();
 
     const spawnInfo = this.getSpawnInfo(cmd, args);
-    this.process = spawn(spawnInfo.command, spawnInfo.args, {
+    const launchSpec: AcpSubprocessLaunchSpec = {
+      command: spawnInfo.command,
+      args: spawnInfo.args,
       cwd,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      windowsHide: true,
-      shell: false,
-    });
+    };
+    this.subprocess = new AcpSubprocess(launchSpec);
+    this.subprocess.start();
 
-    this.process.stdin!.on('error', (e: unknown) => console.error('[copsidian] stdin:', e));
     this.rl = readline.createInterface({
-      input: this.process.stdout!,
+      input: this.subprocess.stdout!,
       crlfDelay: Infinity,
     });
     this.rl.on('line', (line) => {
       if (line.trim()) this.parseLine(line);
     });
 
-    this.process.stderr?.on('data', (d: Uint8Array) => {
-      console.error('[copsidian] stderr:', new TextDecoder().decode(d));
-    });
-    this.process.on('close', (code) => {
+    this.subprocess.onClose((error) => {
       this.connected = false;
-      this.process = null;
-      console.error('[copsidian] process exited with code:', code);
-      this.rejectPending(new Error(t().acp.processExited.replace('{code}', String(code ?? t().acp.unknownCode))));
+      const stderrMsg = this.subprocess?.getStderrSnapshot() || '';
+      this.subprocess = null;
+
+      if (error) {
+        console.error('[copsidian] process error:', error, 'stderr:', stderrMsg);
+        this.rejectPending(error);
+      } else {
+        console.error('[copsidian] process exited. stderr:', stderrMsg);
+        this.rejectPending(new Error(t().acp.processExited.replace('{code}', t().acp.unknownCode)));
+      }
+
       if (this.rl) { this.rl.close(); this.rl = null; }
       this.onClose?.();
 
@@ -283,12 +288,6 @@ export class AcpClient implements OpencodeClient {
       if (!this.isIntentionalDisconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
         this.scheduleReconnect();
       }
-    });
-    this.process.on('error', (e: unknown) => {
-      this.connected = false;
-      console.error('[copsidian] process:', e);
-      this.rejectPending(e instanceof Error ? e : new Error(String(e)));
-      this.onClose?.();
     });
 
     const response = await this.request('initialize', {
@@ -307,22 +306,11 @@ export class AcpClient implements OpencodeClient {
   async disconnect(): Promise<void> {
     this.isIntentionalDisconnect = true;
     this.reconnectAttempts = 0;
-    return new Promise((resolve) => {
-      if (!this.process) { resolve(); return; }
-      const proc = this.process;
-      const onDone = () => {
-        if (this.process === proc) this.process = null;
-        resolve();
-      };
-      proc.once('close', onDone);
-      try {
-        proc.kill();
-      } catch {
-        onDone();
-      }
-      // Fallback: if kill didn't trigger close within 2s, resolve anyway
-      setTimeout(() => onDone(), 2000);
-    });
+
+    if (this.subprocess) {
+      await this.subprocess.shutdown();
+      this.subprocess = null;
+    }
   }
 
   async createSession(cwd?: string, mcpServers: McpServerConfig[] = []): Promise<string> {
@@ -581,12 +569,12 @@ export class AcpClient implements OpencodeClient {
   }
 
   private send(obj: object): boolean {
-    if (!this.process?.stdin?.writable) {
+    if (!(this.subprocess?.stdin as any)?.writable) {
       console.error('[copsidian] ACP send failed: stdin not writable');
       return false;
     }
     const json = JSON.stringify(obj) + '\n';
-    this.process.stdin.write(json, (err: unknown) => {
+    this.subprocess!.stdin!.write(json, (err: unknown) => {
       if (err) console.error('[copsidian] ACP write error:', err);
     });
     return true;
