@@ -1,6 +1,7 @@
 import type { Vault, TFile } from 'obsidian';
 import type { SyncRule } from '../types';
 import { ruleMatches, buildSyncNote } from './templates';
+import { Mutex } from '../utils/mutex';
 
 export interface SyncFailure {
   rule: SyncRule;
@@ -8,6 +9,8 @@ export interface SyncFailure {
 }
 
 export class SyncEngine {
+  private mutex = new Mutex();
+
   constructor(private vault: Vault, private rules: SyncRule[]) {}
 
   private isTFile(file: unknown): file is TFile {
@@ -15,24 +18,26 @@ export class SyncEngine {
   }
 
   async process(ctx: import('./templates').SyncContext): Promise<SyncFailure[]> {
-    const failures: SyncFailure[] = [];
-    for (const rule of this.rules) {
-      if (!ruleMatches(rule, ctx)) continue;
-      try {
-        const note = buildSyncNote(ctx, rule.folder, rule.filenameTemplate, rule.template);
-        await this.ensureFolder(rule.folder);
-        const existing = this.vault.getAbstractFileByPath(note.path);
-        if (existing && this.isTFile(existing)) {
-          await this.vault.modify(existing, note.content);
-        } else {
-          await this.vault.create(note.path, note.content);
+    return this.mutex.runExclusive(async () => {
+      const failures: SyncFailure[] = [];
+      for (const rule of this.rules) {
+        if (!ruleMatches(rule, ctx)) continue;
+        try {
+          const note = buildSyncNote(ctx, rule.folder, rule.filenameTemplate, rule.template);
+          await this.ensureFolder(rule.folder);
+          const existing = this.vault.getAbstractFileByPath(note.path);
+          if (existing && this.isTFile(existing)) {
+            await this.vault.modify(existing, note.content);
+          } else {
+            await this.vault.create(note.path, note.content);
+          }
+        } catch (e) {
+          console.error('[copsidian] sync rule failed:', rule.toolName, e);
+          failures.push({ rule, error: e instanceof Error ? e : new Error(String(e)) });
         }
-      } catch (e) {
-        console.error('[copsidian] sync rule failed:', rule.toolName, e);
-        failures.push({ rule, error: e instanceof Error ? e : new Error(String(e)) });
       }
-    }
-    return failures;
+      return failures;
+    });
   }
 
   private async ensureFolder(folder: string): Promise<void> {

@@ -197,12 +197,21 @@ function createEditor(): { replaceSelection: ReturnType<typeof vi.fn> } {
   return { replaceSelection: vi.fn() };
 }
 
+import { InlineEditPanel } from './inlineEditPanel';
+
 function setPendingInlineEdit(
   view: CopsidianView,
   original: string,
   editor: { replaceSelection: ReturnType<typeof vi.fn> },
 ): void {
-  Reflect.set(view, 'pendingInlineEdit', { original, editor });
+  // The test expects the real panel to run to modify DOM, so we must instantiate it
+  // and attach it correctly if it hasn't been instantiated yet (since createView doesn't call onOpen).
+  let inlineEditPanel = Reflect.get(view, 'inlineEditPanel') as InlineEditPanel;
+  if (!inlineEditPanel) {
+    inlineEditPanel = new InlineEditPanel(view.contentEl);
+    Reflect.set(view, 'inlineEditPanel', inlineEditPanel);
+  }
+  inlineEditPanel.pendingState = { original, editor: editor as any };
 }
 
 function click(view: CopsidianView, selector: string): void {
