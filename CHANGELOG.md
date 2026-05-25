@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.17 - 2026-05-25
+
+### Fixed
+- Add `reject_always` to permission option kinds for correct safe-mode rejection handling.
+- Parse and store `agentCapabilities` from ACP initialize response for capability negotiation.
+- Persist `sessionInfo` (sessionId, title, cwd) from `session_info_update` into client snapshot.
+- Add `audio` content type to `PromptPart` for ACP protocol alignment.
+- Support MCP server environment variable configuration in settings UI and ACP transport.
+
 ## 0.0.16 - 2026-05-25
 
 ### Added
