@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.0.16 - 2026-05-25
+
+### Added
+- Extract WelcomeView component from CopsidianView for welcome page rendering and connection status display.
+- Add event-driven i18n locale change mechanism (`onLocaleChange`) so child components self-manage locale updates instead of relying on parent imperative calls.
+- Add unit tests for DragDropManager (6 tests), PermissionBanner (3 tests), InlineEditPanel (5 tests), and Mutex (3 tests).
+
+### Changed
+- ChatInput, InputToolbar, ChatRenderer, InlineEditPanel, DragDropManager, PermissionBanner, and WelcomeView register their own locale change listeners in constructors.
+- Simplify CopsidianView.refreshLocale() by removing manual child component locale update calls.
+
 ## 0.0.15 - 2026-05-25
 
 ### Fixed
