@@ -153,6 +153,10 @@ export function extractSessionSnapshot(result: Record<string, unknown>): AcpSess
     snapshot.availableCommands = mergeAvailableCommands(result.availableCommands as AvailableCommand[]);
   }
 
+  if (result.sessionInfo) {
+    snapshot.sessionInfo = result.sessionInfo as { sessionId?: string; title?: string; cwd?: string };
+  }
+
   if (Array.isArray(result.configOptions)) {
     const configMeta = extractConfigMeta(result.configOptions as SessionConfigOption[]);
     snapshot.configOptions = configMeta.configOptions;
@@ -209,6 +213,7 @@ interface JsonRpcIncoming {
 export class AcpClient implements OpencodeClient {
   private process: ChildProcess | null = null;
   private connected = false;
+  private agentCapabilities: Record<string, unknown> | null = null;
   private nextId = 0;
   private pending = new Map<number, RpcEntry>();
   private activeStreamSessionId: string | null = null;
@@ -286,12 +291,17 @@ export class AcpClient implements OpencodeClient {
       this.onClose?.();
     });
 
-    await this.request('initialize', {
+    const response = await this.request('initialize', {
       protocolVersion: 1,
       clientInfo: { name: 'copsidian', version: CLIENT_VERSION },
       clientCapabilities: {},
-    });
+    }) as Record<string, unknown>;
+    this.agentCapabilities = (response.agentCapabilities as Record<string, unknown>) ?? null;
     this.connected = true;
+  }
+
+  getAgentCapabilities(): Record<string, unknown> | null {
+    return this.agentCapabilities;
   }
 
   async disconnect(): Promise<void> {
@@ -665,6 +675,6 @@ export function buildMcpServers(servers: McpServerConfig[]): AcpMcpServer[] {
       name: server.name.trim(),
       command: server.command.trim(),
       args: server.args.map((arg) => arg.trim()).filter(Boolean),
-      env: [],
+      env: server.env ?? [],
     }));
 }
