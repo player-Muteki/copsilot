@@ -21,6 +21,7 @@ import { Autocomplete } from './autocomplete';
 import { buildCustomAgentPrompt, getValidActiveCustomAgent } from '../agents/custom';
 import { filterCommonModelOptions } from './modelFilter';
 import { applyDefaultSessionSettings } from './sessionDefaults';
+import { Mutex } from '../utils/mutex';
 
 interface MarkdownFileView {
 	getViewType(): string;
@@ -28,6 +29,7 @@ interface MarkdownFileView {
 }
 
 export class CopsidianView extends ItemView {
+	private sessionMutex = new Mutex();
 	private messagesEl!: HTMLDivElement;
 	private contextChipsEl!: HTMLDivElement;
 	private renderer!: ChatRenderer;
@@ -100,10 +102,12 @@ export class CopsidianView extends ItemView {
 
 	private async syncRuntimeSession(sessionId: string | null): Promise<void> {
 		if (!sessionId) return;
-		const client = this.plugin.getClient();
-		if (!client) return;
-		if (client.getCurrentSessionId() === sessionId) return;
-		await client.loadSession(sessionId, this.getVaultCwd(), this.plugin.settings.mcpServers);
+		return this.sessionMutex.runExclusive(async () => {
+			const client = this.plugin.getClient();
+			if (!client) return;
+			if (client.getCurrentSessionId() === sessionId) return;
+			await client.loadSession(sessionId, this.getVaultCwd(), this.plugin.settings.mcpServers);
+		});
 	}
 
 	private async cancelActiveGeneration(): Promise<void> {
@@ -693,10 +697,15 @@ export class CopsidianView extends ItemView {
 		try {
 			await this.cancelActiveGeneration();
 			this.resetConversationView();
-			this.state.sessionId = await c.createSession(this.getVaultCwd(), this.plugin.settings.mcpServers);
-			await applyDefaultSessionSettings(c, this.state.sessionId, this.plugin.settings);
-			this.sessionStore.getOrCreate(this.state.sessionId);
-			this.sessionStore.setActive(this.state.sessionId);
+			await this.sessionMutex.runExclusive(async () => {
+				const sid = await c.createSession(this.getVaultCwd(), this.plugin.settings.mcpServers);
+				this.state.sessionId = sid;
+				await applyDefaultSessionSettings(c, sid, this.plugin.settings);
+			});
+			if (this.state.sessionId) {
+				this.sessionStore.getOrCreate(this.state.sessionId);
+				this.sessionStore.setActive(this.state.sessionId);
+			}
 			await this.sessionStore.save();
 			this.loadToolbarOptions();
 			this.maybeShowWelcome();
@@ -977,10 +986,15 @@ export class CopsidianView extends ItemView {
 		}
 
 		try {
-			this.state.sessionId = await client.createSession(this.getVaultCwd(), this.plugin.settings.mcpServers);
-			await applyDefaultSessionSettings(client, this.state.sessionId, this.plugin.settings);
-			this.sessionStore.getOrCreate(this.state.sessionId);
-			this.sessionStore.setActive(this.state.sessionId);
+			await this.sessionMutex.runExclusive(async () => {
+				const sid = await client.createSession(this.getVaultCwd(), this.plugin.settings.mcpServers);
+				this.state.sessionId = sid;
+				await applyDefaultSessionSettings(client, sid, this.plugin.settings);
+			});
+			if (this.state.sessionId) {
+				this.sessionStore.getOrCreate(this.state.sessionId);
+				this.sessionStore.setActive(this.state.sessionId);
+			}
 			await this.sessionStore.save();
 			this.loadToolbarOptions();
 			return this.state.sessionId;

@@ -37,14 +37,26 @@ export class AgentRuntime implements OpencodeClient {
   }
 
   async sendMessage(id: string, parts: PromptPart[], handler: (u: SessionUpdate) => void): Promise<AcpResponse> {
-    const timeoutMs = 5 * 60 * 1000; // 5 minutes
+    const timeoutMs = 5 * 60 * 1000; // 5 minutes idle timeout
     return new Promise<AcpResponse>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        this.acp.cancel(id).catch(() => {});
-        reject(new Error(t().acp.requestTimeout));
-      }, timeoutMs);
+      let timeout: NodeJS.Timeout;
 
-      this.acp.sendMessage(id, parts, handler)
+      const resetTimeout = () => {
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          this.acp.cancel(id).catch(() => {});
+          reject(new Error(t().acp.requestTimeout));
+        }, timeoutMs);
+      };
+
+      resetTimeout();
+
+      const heartbeatHandler = (u: SessionUpdate) => {
+        resetTimeout();
+        handler(u);
+      };
+
+      this.acp.sendMessage(id, parts, heartbeatHandler)
         .then((res) => {
           clearTimeout(timeout);
           resolve(res as AcpResponse);

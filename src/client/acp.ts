@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from 'child_process';
 import { existsSync } from 'fs';
+import * as readline from 'readline';
 import { delimiter, extname } from 'path';
 import type {
   SessionUpdate,
@@ -201,9 +202,8 @@ export class AcpClient implements OpencodeClient {
   private connected = false;
   private nextId = 0;
   private pending = new Map<number, RpcEntry>();
-  private buffer = '';
   private chunkHandler: ((update: SessionUpdate) => void) | null = null;
-  private decoder = new TextDecoder();
+  private rl: readline.Interface | null = null;
   private sessionId_: string | null = null;
   private cmdPath: string;
   private cwd?: string;
@@ -244,14 +244,22 @@ export class AcpClient implements OpencodeClient {
     });
 
     this.process.stdin!.on('error', (e: unknown) => console.error('[copsidian] stdin:', e));
-    this.process.stdout!.on('data', (d: Uint8Array) => this.onStdout(d));
+    this.rl = readline.createInterface({
+      input: this.process.stdout!,
+      crlfDelay: Infinity,
+    });
+    this.rl.on('line', (line) => {
+      if (line.trim()) this.parseLine(line);
+    });
+
     this.process.stderr?.on('data', (d: Uint8Array) => {
-      console.error('[copsidian] stderr:', this.decoder.decode(d));
+      console.error('[copsidian] stderr:', new TextDecoder().decode(d));
     });
     this.process.on('close', (code) => {
       this.connected = false;
       console.error('[copsidian] process exited with code:', code);
       this.rejectPending(new Error(t().acp.processExited.replace('{code}', String(code ?? t().acp.unknownCode))));
+      if (this.rl) { this.rl.close(); this.rl = null; }
       this.onClose?.();
 
       // Auto-reconnect if not intentional disconnect
@@ -427,17 +435,6 @@ export class AcpClient implements OpencodeClient {
           this.availableModels = [...update.availableModels];
         }
         break;
-    }
-  }
-
-  private onStdout(data: Uint8Array): void {
-    this.buffer += this.decoder.decode(data, { stream: true });
-    let nl: number;
-    while ((nl = this.buffer.indexOf('\n')) !== -1) {
-      const line = this.buffer.slice(0, nl).trim();
-      this.buffer = this.buffer.slice(nl + 1);
-      if (!line) continue;
-      this.parseLine(line);
     }
   }
 
