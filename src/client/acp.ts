@@ -44,6 +44,11 @@ export interface AcpSessionMeta {
   configOptions: SessionConfigOption[];
   currentModelId: string | null;
   currentModeId: string | null;
+  sessionInfo?: {
+    sessionId?: string;
+    title?: string;
+    cwd?: string;
+  };
 }
 
 /** Parse a JSON-RPC update into a strongly typed SessionUpdate */
@@ -177,6 +182,10 @@ export function extractSessionSnapshot(result: Record<string, unknown>): AcpSess
     }
   }
 
+  if (result.sessionInfo) {
+    snapshot.sessionInfo = result.sessionInfo as { sessionId?: string; title?: string; cwd?: string };
+  }
+
   return snapshot;
 }
 
@@ -214,6 +223,7 @@ export class AcpClient implements OpencodeClient {
   private configOptions: SessionConfigOption[] = [];
   private currentModelId: string | null = null;
   private currentModeId: string | null = null;
+  private sessionInfo: { sessionId?: string; title?: string; cwd?: string } | null = null;
   onClose?: () => void;
   onPermissionRequest?: (req: PermissionRequest) => Promise<string>;
   onReconnect?: () => Promise<void>;
@@ -387,6 +397,9 @@ export class AcpClient implements OpencodeClient {
   getAvailableAgents(): Promise<ModeOption[]> { return Promise.resolve([...this.availableModes]); }
   getAvailableModels(): Promise<ModelOption[]> { return Promise.resolve([...this.availableModels]); }
   getAvailableCommands(): Promise<AvailableCommand[]> { return Promise.resolve([...this.availableCommands]); }
+  getSessionInfo(): { sessionId?: string; title?: string; cwd?: string } | null {
+    return this.sessionInfo;
+  }
   getSessionSnapshot(): SessionSnapshot {
     return {
       configOptions: [...this.configOptions],
@@ -420,6 +433,7 @@ export class AcpClient implements OpencodeClient {
     this.configOptions = snapshot.configOptions;
     this.currentModelId = snapshot.currentModelId;
     this.currentModeId = snapshot.currentModeId;
+    this.sessionInfo = snapshot.sessionInfo ?? null;
   }
 
   private applyConfigOptions(configOptions: SessionConfigOption[]): void {
@@ -458,6 +472,14 @@ export class AcpClient implements OpencodeClient {
         if (update.availableModels) {
           this.availableModels = [...update.availableModels];
         }
+        break;
+      case 'session_info_update':
+        this.sessionInfo = {
+          ...this.sessionInfo,
+          ...(typeof update.sessionId === 'string' ? { sessionId: update.sessionId } : {}),
+          ...(typeof update.title === 'string' ? { title: update.title } : {}),
+          ...(typeof update.cwd === 'string' ? { cwd: update.cwd } : {}),
+        };
         break;
     }
   }

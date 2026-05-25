@@ -98,6 +98,7 @@ export class AgentRuntime implements OpencodeClient {
   getAvailableAgents(): Promise<ModeOption[]> { return this.acp.getAvailableAgents(); }
   getAvailableModels(): Promise<ModelOption[]> { return this.acp.getAvailableModels(); }
   getAvailableCommands(): Promise<AvailableCommand[]> { return this.acp.getAvailableCommands(); }
+  getSessionInfo(): { sessionId?: string; title?: string; cwd?: string } | null { return this.acp.getSessionInfo(); }
   getSessionSnapshot(): SessionSnapshot { return this.acp.getSessionSnapshot(); }
   getCurrentSessionId(): string | undefined { return this.acp.getCurrentSessionId(); }
 }

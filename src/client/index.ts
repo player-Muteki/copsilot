@@ -45,6 +45,7 @@ export interface OpencodeClient {
   getAvailableAgents(): Promise<ModeOption[]>;
   getAvailableModels(): Promise<ModelOption[]>;
   getAvailableCommands(): Promise<AvailableCommand[]>;
+  getSessionInfo(): { sessionId?: string; title?: string; cwd?: string } | null;
   getSessionSnapshot(): SessionSnapshot;
   getCurrentSessionId(): SessionId | undefined;
   setClientHandlers(handlers: ClientHandlers): void;
