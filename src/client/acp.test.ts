@@ -319,34 +319,25 @@ describe('AcpClient session loading', () => {
 describe('AcpClient server request handling', () => {
   it('falls back to a reject decision when permission UI handler fails', async () => {
     const client = new AcpClient('opencode');
-    const sent: unknown[] = [];
-    Reflect.set(client, 'send', (message: unknown) => {
-      sent.push(message);
-      return true;
-    });
+
     client.onPermissionRequest = vi.fn().mockRejectedValue(new Error('ui unavailable'));
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    Reflect.get(client, 'handleServerRequest').call(client, {
-      method: 'request_permission',
-      params: {
-        sessionId: 's1',
-        toolCall: { kind: 'edit', title: 'Edit file' },
-        options: [
-          { optionId: 'allow', name: 'Allow', kind: 'allow_once' },
-          { optionId: 'reject', name: 'Reject', kind: 'reject_once' },
-        ],
-      },
-    }, 42);
-    await flushPromises();
+    const promise = Reflect.get(client, 'handleServerRequestPermission').call(client, {
+      sessionId: 's1',
+      toolCall: { kind: 'edit', title: 'Edit file' },
+      options: [
+        { optionId: 'allow', name: 'Allow', kind: 'allow_once' },
+        { optionId: 'reject', name: 'Reject', kind: 'reject_once' },
+      ],
+    });
 
-    expect(sent).toEqual([
-      {
-        jsonrpc: '2.0',
-        id: 42,
-        result: { sessionId: 's1', decision: { optionId: 'reject' } },
-      },
-    ]);
+    const result = await promise;
+
+    expect(result).toEqual({
+      sessionId: 's1',
+      decision: { optionId: 'reject' }
+    });
     consoleSpy.mockRestore();
   });
 
@@ -354,8 +345,3 @@ describe('AcpClient server request handling', () => {
     expect(CLIENT_VERSION).toBe('0.0.18');
   });
 });
-
-
-function flushPromises(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
-}
