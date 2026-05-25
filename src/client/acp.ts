@@ -1,6 +1,5 @@
 import { existsSync } from 'fs';
 import { AcpSubprocess, type AcpSubprocessLaunchSpec } from './AcpSubprocess';
-import * as readline from 'readline';
 import { delimiter, extname } from 'path';
 import type {
   SessionUpdate,
@@ -18,24 +17,9 @@ import type { OpencodeClient } from './index';
 import type { SessionMeta } from '../types';
 import type { AcpResponse } from '../types';
 import { t } from '../i18n/index';
+import { AcpJsonRpcTransport } from './AcpJsonRpcTransport';
 
 export const CLIENT_VERSION = '0.0.18';
-
-interface JsonRpcRequest {
-  jsonrpc: '2.0';
-  id: number;
-  method: string;
-  params?: Record<string, unknown>;
-}
-
-interface JsonRpcResponse {
-  jsonrpc: '2.0';
-  id?: number;
-  result?: unknown;
-  error?: { code: number; message: string };
-}
-
-type RpcEntry = { resolve: (v: unknown) => void; reject: (e: Error) => void };
 
 export interface AcpSessionMeta {
   availableCommands: AvailableCommand[];
@@ -200,25 +184,13 @@ export interface AcpMcpServer {
   env: Array<{ name: string; value: string }>;
 }
 
-/** Fields common to all JSON-RPC message types received from the server. */
-interface JsonRpcIncoming {
-  jsonrpc?: string;
-  id?: number;
-  method?: string;
-  result?: unknown;
-  error?: { code: number; message: string };
-  params?: Record<string, unknown>;
-}
-
 export class AcpClient implements OpencodeClient {
   private subprocess: AcpSubprocess | null = null;
   private connected = false;
+  private transport: AcpJsonRpcTransport | null = null;
   private agentCapabilities: Record<string, unknown> | null = null;
-  private nextId = 0;
-  private pending = new Map<number, RpcEntry>();
   private activeStreamSessionId: string | null = null;
   private chunkHandler: ((update: SessionUpdate) => void) | null = null;
-  private rl: readline.Interface | null = null;
   private sessionId_: string | null = null;
   private cmdPath: string;
   private cwd?: string;
@@ -260,12 +232,23 @@ export class AcpClient implements OpencodeClient {
     this.subprocess = new AcpSubprocess(launchSpec);
     this.subprocess.start();
 
-    this.rl = readline.createInterface({
+    this.transport = new AcpJsonRpcTransport({
       input: this.subprocess.stdout!,
-      crlfDelay: Infinity,
+      output: this.subprocess.stdin!,
     });
-    this.rl.on('line', (line) => {
-      if (line.trim()) this.parseLine(line);
+    this.transport.start();
+
+    this.transport.onNotification('session/update', (params) => {
+      const p = params as Record<string, unknown> | undefined;
+      const update = this.parseUpdate(p?.update as Record<string, unknown> | undefined);
+      if (update) {
+        this.applySessionUpdate(update);
+        if (this.chunkHandler) this.chunkHandler(update);
+      }
+    });
+
+    this.transport.onRequest('request_permission', (params) => {
+      return this.handleServerRequestPermission(params as Record<string, unknown>);
     });
 
     this.subprocess.onClose((error) => {
@@ -275,13 +258,12 @@ export class AcpClient implements OpencodeClient {
 
       if (error) {
         console.error('[copsidian] process error:', error, 'stderr:', stderrMsg);
-        this.rejectPending(error);
+        this.transport?.dispose(error);
       } else {
         console.error('[copsidian] process exited. stderr:', stderrMsg);
-        this.rejectPending(new Error(t().acp.processExited.replace('{code}', t().acp.unknownCode)));
+        this.transport?.dispose(new Error(t().acp.processExited.replace('{code}', t().acp.unknownCode)));
       }
 
-      if (this.rl) { this.rl.close(); this.rl = null; }
       this.onClose?.();
 
       // Auto-reconnect if not intentional disconnect
@@ -482,67 +464,25 @@ export class AcpClient implements OpencodeClient {
     }
   }
 
-  private parseLine(line: string): void {
-    let parsed: Record<string, unknown>;
-    try { parsed = JSON.parse(line); } catch { return; }
-    const msg: JsonRpcIncoming = parsed;
-    const id = typeof msg.id === 'number' ? msg.id : undefined;
-    const hasResult = msg.result !== undefined;
-    const hasError = msg.error !== undefined;
-    const hasMethod = typeof msg.method === 'string';
-
-    if (id !== undefined && hasResult) {
-      const entry = this.pending.get(id);
-      this.pending.delete(id);
-      if (entry) entry.resolve(msg.result);
-    } else if (id !== undefined && hasError) {
-      const entry = this.pending.get(id);
-      this.pending.delete(id);
-      if (entry) entry.reject(new Error(msg.error!.message));
-    } else if (hasMethod && id === undefined) {
-      // Notification
-      if (msg.method === 'session/update') {
-        const update = this.parseUpdate(msg.params?.update as Record<string, unknown> | undefined);
-        if (update) {
-          this.applySessionUpdate(update);
-          if (this.chunkHandler) this.chunkHandler(update);
-        }
-      }
-    } else if (hasMethod && id !== undefined) {
-      // Server-initiated request
-      this.handleServerRequest(msg, id);
-    }
-  }
-
-  private handleServerRequest(msg: JsonRpcIncoming, id: number): void {
-    if (msg.method === 'request_permission' && msg.params) {
-      const p = msg.params;
+  private handleServerRequestPermission(params: Record<string, unknown>): Promise<unknown> {
+    return new Promise((resolve, reject) => {
       const req: PermissionRequest = {
-        sessionId: p.sessionId as string,
-        toolCall: p.toolCall as PermissionRequest['toolCall'],
-        options: p.options as PermissionOption[],
+        sessionId: params.sessionId as string,
+        toolCall: params.toolCall as PermissionRequest['toolCall'],
+        options: params.options as PermissionOption[],
       };
-      const sendDecision = (decision: string): void => {
-        const resp: JsonRpcResponse = {
-          jsonrpc: '2.0', id,
-          result: { sessionId: p.sessionId, decision: { optionId: decision } },
-        };
-        this.send(resp as unknown as Record<string, unknown>);
-      };
-      const sendError = (error: unknown): void => {
-        const message = error instanceof Error ? error.message : String(error);
-        const resp: JsonRpcResponse = {
-          jsonrpc: '2.0', id,
-          error: { code: -32000, message },
-        };
-        this.send(resp as unknown as Record<string, unknown>);
-      };
+
       const handler = this.onPermissionRequest ?? ((r: PermissionRequest) => this.requestPermission(r));
-      handler(req).then(sendDecision).catch((error: unknown) => {
+      handler(req).then((decision: string) => {
+        resolve({ sessionId: params.sessionId, decision: { optionId: decision } });
+      }).catch((error: unknown) => {
         console.error('[copsidian] permission request failed:', error);
-        this.requestPermission(req).then(sendDecision).catch(sendError);
+        // Fallback to default handler on failure
+        this.requestPermission(req).then((decision: string) => {
+          resolve({ sessionId: params.sessionId, decision: { optionId: decision } });
+        }).catch(reject);
       });
-    }
+    });
   }
 
   private parseUpdate(u: Record<string, unknown> | undefined | null): SessionUpdate | null {
@@ -550,15 +490,8 @@ export class AcpClient implements OpencodeClient {
   }
 
   private request(method: string, params?: Record<string, unknown>): Promise<unknown> {
-    const id = ++this.nextId;
-    const req: JsonRpcRequest = { jsonrpc: '2.0', id, method, params };
-    return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
-      if (!this.send(req)) {
-        this.pending.delete(id);
-        reject(new Error(t().acp.stdinNotWritable));
-      }
-    });
+    if (!this.transport) return Promise.reject(new Error(t().acp.stdinNotWritable));
+    return this.transport.request(method, params);
   }
 
   async reconnect(): Promise<void> {
@@ -566,25 +499,6 @@ export class AcpClient implements OpencodeClient {
     this.isIntentionalDisconnect = false;
     this.reconnectAttempts = 0;
     await this.connect();
-  }
-
-  private send(obj: object): boolean {
-    if (!(this.subprocess?.stdin as any)?.writable) {
-      console.error('[copsidian] ACP send failed: stdin not writable');
-      return false;
-    }
-    const json = JSON.stringify(obj) + '\n';
-    this.subprocess!.stdin!.write(json, (err: unknown) => {
-      if (err) console.error('[copsidian] ACP write error:', err);
-    });
-    return true;
-  }
-
-  private rejectPending(error: Error): void {
-    for (const [, entry] of this.pending) {
-      entry.reject(error);
-    }
-    this.pending.clear();
   }
 
   private scheduleReconnect(): void {
