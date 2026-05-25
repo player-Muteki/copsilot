@@ -10,7 +10,7 @@ export interface SessionMeta {
 }
 
 export interface PromptPart {
-  type: 'text' | 'image' | 'resource_link' | 'resource';
+  type: 'text' | 'image' | 'audio' | 'resource_link' | 'resource';
   text?: string;
   mimeType?: string;
   data?: string;
