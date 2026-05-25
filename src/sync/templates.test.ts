@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ruleMatches, buildSyncNote } from './templates';
+import { ruleMatches, buildSyncNote, sanitizeVaultPath } from './templates';
 import type { SyncRule } from '../types';
 
 describe('ruleMatches', () => {
@@ -76,5 +76,87 @@ describe('buildSyncNote', () => {
     const ctx = { toolCallId: 'abc', toolName: 'read', toolStatus: 'completed', rawOutput: { output: { ok: true } } };
     const result = buildSyncNote(ctx, 'folder', 'note');
     expect(result.content).toContain('"ok": true');
+  });
+
+  it('should reject path traversal in folder', () => {
+    const ctx = { toolCallId: 'abc', toolName: 'edit', toolStatus: 'completed' };
+    expect(() => buildSyncNote(ctx, '../etc', 'note')).toThrow('Invalid sync path');
+  });
+
+  it('should reject path traversal in filename', () => {
+    const ctx = { toolCallId: 'abc', toolName: 'edit', toolStatus: 'completed' };
+    expect(() => buildSyncNote(ctx, 'sync', '../../secret')).toThrow('Invalid sync path');
+  });
+});
+
+describe('ruleMatches with path field', () => {
+  const baseRule: SyncRule = {
+    id: 'test',
+    enabled: true,
+    toolName: 'edit',
+    folder: 'sync',
+    filenameTemplate: '{{tool}}-{{date}}-{{shortId}}',
+    pathPattern: 'src/**',
+  };
+
+  it('should match using rawInput.path when filePath is absent', () => {
+    const ctx = { toolCallId: '1', toolName: 'edit', toolStatus: 'completed', rawInput: { path: 'src/main.ts' } };
+    expect(ruleMatches(baseRule, ctx)).toBe(true);
+  });
+
+  it('should reject when pathPattern set but no path fields present', () => {
+    const ctx = { toolCallId: '1', toolName: 'edit', toolStatus: 'completed', rawInput: { other: 'value' } };
+    expect(ruleMatches(baseRule, ctx)).toBe(false);
+  });
+
+  it('should prefer filePath over path', () => {
+    const ctx = { toolCallId: '1', toolName: 'edit', toolStatus: 'completed', rawInput: { filePath: 'dist/out.js', path: 'src/main.ts' } };
+    expect(ruleMatches(baseRule, ctx)).toBe(false);
+  });
+});
+
+describe('sanitizeVaultPath', () => {
+  it('should accept valid paths', () => {
+    expect(sanitizeVaultPath('sync', 'note')).toEqual({ folder: 'sync', filename: 'note' });
+  });
+
+  it('should accept nested folders', () => {
+    expect(sanitizeVaultPath('a/b/c', 'file')).toEqual({ folder: 'a/b/c', filename: 'file' });
+  });
+
+  it('should normalize backslashes', () => {
+    expect(sanitizeVaultPath('a\\b', 'c\\d')).toEqual({ folder: 'a/b', filename: 'c/d' });
+  });
+
+  it('should reject empty folder', () => {
+    expect(sanitizeVaultPath('', 'note')).toBeNull();
+  });
+
+  it('should reject empty filename', () => {
+    expect(sanitizeVaultPath('sync', '')).toBeNull();
+  });
+
+  it('should reject .. in folder', () => {
+    expect(sanitizeVaultPath('../etc', 'note')).toBeNull();
+  });
+
+  it('should reject .. in filename', () => {
+    expect(sanitizeVaultPath('sync', '../../secret')).toBeNull();
+  });
+
+  it('should reject absolute paths', () => {
+    expect(sanitizeVaultPath('/etc', 'note')).toBeNull();
+  });
+
+  it('should reject drive letters', () => {
+    expect(sanitizeVaultPath('C:/Windows', 'note')).toBeNull();
+  });
+
+  it('should reject illegal filename characters', () => {
+    expect(sanitizeVaultPath('sync', 'note<>test')).toBeNull();
+  });
+
+  it('should reject trailing dots', () => {
+    expect(sanitizeVaultPath('sync', 'note.')).toBeNull();
   });
 });
