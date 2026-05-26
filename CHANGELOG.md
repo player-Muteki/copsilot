@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.22
+
+### Added
+- Added support for `http` and `sse` MCP servers in settings and ACP configuration output.
+- Added support for `terminal` content in `tool_call_update` payloads for future terminal capabilities.
+- Added `mimeType` property to `PromptPart.resource` in types.
+- Added unit tests covering the new discriminated unions for MCP server configurations.
+
+### Changed
+- Converted `McpServerConfig` into a discriminated union.
+- Updated settings UI to display a Type dropdown for selecting `stdio`, `http`, or `sse` MCP servers.
+
 ## 0.0.21 - 2026-05-26
 
 ### Changed

@@ -254,6 +254,7 @@ export class CopsidianSettingsTab extends PluginSettingTab {
       .addButton((b) => b.setButtonText(labels.mcp.add)
         .onClick(async () => {
           const server: McpServerConfig = {
+            type: 'stdio',
             id: Date.now().toString(),
             enabled: true,
             name: 'filesystem',
@@ -635,74 +636,156 @@ export class CopsidianSettingsTab extends PluginSettingTab {
       .addText((text) => text.setValue(server.name)
         .onChange(async (value) => { server.name = value.trim(); await this.save(); }));
 
-    new Setting(block)
-      .setName(labels.command)
-      .setDesc(labels.commandDesc)
-      .addText((text) => text.setValue(server.command)
-        .onChange(async (value) => { server.command = value.trim(); await this.save(); }));
+    const currentType = server.type ?? 'stdio';
 
     new Setting(block)
-      .setName(labels.args)
-      .setDesc(labels.argsDesc)
-      .addTextArea((text) => {
-        text.setValue(server.args.join('\n'));
-        text.inputEl.rows = 4;
-        text.inputEl.classList.add('copsidian-mcp-args');
-        text.onChange(async (value) => {
-          server.args = value.split('\n').map((arg) => arg.trim()).filter(Boolean);
+      .setName('Type')
+      .addDropdown((d) => d.addOptions({ stdio: 'stdio', http: 'http', sse: 'sse' })
+        .setValue(currentType)
+        .onChange(async (v) => {
+          const newType = v as 'stdio' | 'http' | 'sse';
+          if (newType === 'stdio') {
+            const newServer = { type: 'stdio' as const, id: server.id, enabled: server.enabled, name: server.name, command: 'npx', args: [], env: [] };
+            Object.assign(server, newServer);
+            if ('url' in server) delete (server as any).url;
+            if ('headers' in server) delete (server as any).headers;
+          } else {
+            const newServer = { type: newType, id: server.id, enabled: server.enabled, name: server.name, url: 'http://localhost:3000', headers: [] };
+            Object.assign(server, newServer);
+            if ('command' in server) delete (server as any).command;
+            if ('args' in server) delete (server as any).args;
+            if ('env' in server) delete (server as any).env;
+          }
           await this.save();
+          this.display();
+        }));
+
+    if (currentType === 'stdio') {
+      new Setting(block)
+        .setName(labels.command)
+        .setDesc(labels.commandDesc)
+        .addText((text) => text.setValue('command' in server ? (server as any).command : '')
+          .onChange(async (value) => { (server as any).command = value.trim(); await this.save(); }));
+
+      new Setting(block)
+        .setName(labels.args)
+        .setDesc(labels.argsDesc)
+        .addTextArea((text) => {
+          text.setValue(('args' in server ? (server as any).args : []).join('\n'));
+          text.inputEl.rows = 4;
+          text.inputEl.classList.add('copsidian-mcp-args');
+          text.onChange(async (value) => {
+            (server as any).args = value.split('\n').map((arg: string) => arg.trim()).filter(Boolean);
+            await this.save();
+          });
         });
-      });
 
-    const envDetails = block.createEl('details', { cls: 'copsidian-mcp-env-details' });
-    envDetails.createEl('summary', { text: labels.env });
+      const envDetails = block.createEl('details', { cls: 'copsidian-mcp-env-details' });
+      envDetails.createEl('summary', { text: labels.env });
 
-    const renderEnvVars = () => {
-      envDetails.querySelectorAll('.copsidian-mcp-env-var, .copsidian-mcp-env-add').forEach((el) => el.remove());
-      const envVars = server.env ?? [];
-      for (let i = 0; i < envVars.length; i++) {
-        const envVar = envVars[i];
-        const row = envDetails.createDiv({ cls: 'copsidian-mcp-env-var' });
-        row.style.display = 'flex';
-        row.style.gap = '8px';
-        row.style.marginBottom = '8px';
+      const renderEnvVars = () => {
+        envDetails.querySelectorAll('.copsidian-mcp-env-var, .copsidian-mcp-env-add').forEach((el) => el.remove());
+        const envVars = ('env' in server ? (server as any).env : []) ?? [];
+        for (let i = 0; i < envVars.length; i++) {
+          const envVar = envVars[i];
+          const row = envDetails.createDiv({ cls: 'copsidian-mcp-env-var' });
+          row.style.display = 'flex';
+          row.style.gap = '8px';
+          row.style.marginBottom = '8px';
 
-        const nameInput = row.createEl('input', { type: 'text', placeholder: labels.envName });
-        nameInput.value = envVar.name;
-        nameInput.style.flex = '1';
-        nameInput.onchange = async () => {
-          envVar.name = nameInput.value.trim();
-          await this.save();
-        };
+          const nameInput = row.createEl('input', { type: 'text', placeholder: labels.envName });
+          nameInput.value = envVar.name;
+          nameInput.style.flex = '1';
+          nameInput.onchange = async () => {
+            envVar.name = nameInput.value.trim();
+            await this.save();
+          };
 
-        const valueInput = row.createEl('input', { type: 'text', placeholder: labels.envValue });
-        valueInput.value = envVar.value;
-        valueInput.style.flex = '2';
-        valueInput.onchange = async () => {
-          envVar.value = valueInput.value.trim();
-          await this.save();
-        };
+          const valueInput = row.createEl('input', { type: 'text', placeholder: labels.envValue });
+          valueInput.value = envVar.value;
+          valueInput.style.flex = '2';
+          valueInput.onchange = async () => {
+            envVar.value = valueInput.value.trim();
+            await this.save();
+          };
 
-        const delEnvBtn = row.createEl('button', { text: '✕' });
-        delEnvBtn.onclick = async () => {
-          server.env = server.env?.filter((_, index) => index !== i);
-          await this.save();
-          renderEnvVars();
-        };
-      }
-
-      const addRow = envDetails.createDiv({ cls: 'copsidian-mcp-env-add' });
-      new Setting(addRow)
-        .setName('')
-        .addButton((b) => b.setButtonText(labels.envAdd)
-          .onClick(async () => {
-            if (!server.env) server.env = [];
-            server.env.push({ name: '', value: '' });
+          const delEnvBtn = row.createEl('button', { text: '✕' });
+          delEnvBtn.onclick = async () => {
+            (server as any).env = (server as any).env?.filter((_: any, index: number) => index !== i);
             await this.save();
             renderEnvVars();
-          }));
-    };
-    renderEnvVars();
+          };
+        }
+
+        const addRow = envDetails.createDiv({ cls: 'copsidian-mcp-env-add' });
+        new Setting(addRow)
+          .setName('')
+          .addButton((b) => b.setButtonText(labels.envAdd)
+            .onClick(async () => {
+              if (!('env' in server) || !(server as any).env) (server as any).env = [];
+              (server as any).env.push({ name: '', value: '' });
+              await this.save();
+              renderEnvVars();
+            }));
+      };
+      renderEnvVars();
+    } else {
+      new Setting(block)
+        .setName('URL')
+        .setDesc('Server URL')
+        .addText((text) => text.setValue('url' in server ? (server as any).url : '')
+          .onChange(async (value) => { (server as any).url = value.trim(); await this.save(); }));
+
+      const headersDetails = block.createEl('details', { cls: 'copsidian-mcp-headers-details' });
+      headersDetails.createEl('summary', { text: 'Headers' });
+
+      const renderHeaders = () => {
+        headersDetails.querySelectorAll('.copsidian-mcp-header-var, .copsidian-mcp-header-add').forEach((el) => el.remove());
+        const headersVars = ('headers' in server ? (server as any).headers : []) ?? [];
+        for (let i = 0; i < headersVars.length; i++) {
+          const headerVar = headersVars[i];
+          const row = headersDetails.createDiv({ cls: 'copsidian-mcp-header-var' });
+          row.style.display = 'flex';
+          row.style.gap = '8px';
+          row.style.marginBottom = '8px';
+
+          const nameInput = row.createEl('input', { type: 'text', placeholder: 'Name' });
+          nameInput.value = headerVar.name;
+          nameInput.style.flex = '1';
+          nameInput.onchange = async () => {
+            headerVar.name = nameInput.value.trim();
+            await this.save();
+          };
+
+          const valueInput = row.createEl('input', { type: 'text', placeholder: 'Value' });
+          valueInput.value = headerVar.value;
+          valueInput.style.flex = '2';
+          valueInput.onchange = async () => {
+            headerVar.value = valueInput.value.trim();
+            await this.save();
+          };
+
+          const delHeaderBtn = row.createEl('button', { text: '✕' });
+          delHeaderBtn.onclick = async () => {
+            (server as any).headers = (server as any).headers?.filter((_: any, index: number) => index !== i);
+            await this.save();
+            renderHeaders();
+          };
+        }
+
+        const addRow = headersDetails.createDiv({ cls: 'copsidian-mcp-header-add' });
+        new Setting(addRow)
+          .setName('')
+          .addButton((b) => b.setButtonText('+ Add Header')
+            .onClick(async () => {
+              if (!('headers' in server) || !(server as any).headers) (server as any).headers = [];
+              (server as any).headers.push({ name: '', value: '' });
+              await this.save();
+              renderHeaders();
+            }));
+      };
+      renderHeaders();
+    }
 
     const delBtn = block.createEl('button', { text: locale().settings.sync.delete, cls: 'mod-warning' });
     delBtn.onclick = async () => {

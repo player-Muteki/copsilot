@@ -272,21 +272,34 @@ describe('mergeAvailableCommands', () => {
 });
 
 describe('buildMcpServers', () => {
-  it('should include enabled servers with command and name', () => {
+  it('should include enabled stdio servers with command and name', () => {
     const result = buildMcpServers([
-      { id: '1', enabled: true, name: ' filesystem ', command: ' npx ', args: [' -y ', '', '@modelcontextprotocol/server-filesystem'] },
+      { type: 'stdio', id: '1', enabled: true, name: ' filesystem ', command: ' npx ', args: [' -y ', '', '@modelcontextprotocol/server-filesystem'] },
     ]);
 
     expect(result).toEqual([
-      { name: 'filesystem', command: 'npx', args: ['-y', '@modelcontextprotocol/server-filesystem'], env: [] },
+      { type: 'stdio', name: 'filesystem', command: 'npx', args: ['-y', '@modelcontextprotocol/server-filesystem'], env: [] },
+    ]);
+  });
+
+  it('should include enabled http/sse servers with url and name', () => {
+    const result = buildMcpServers([
+      { type: 'http', id: '2', enabled: true, name: ' my_http ', url: ' http://localhost:8000 ', headers: [{ name: 'Auth', value: '123' }] },
+      { type: 'sse', id: '3', enabled: true, name: ' my_sse ', url: ' http://localhost:8001 ', headers: [] },
+    ]);
+
+    expect(result).toEqual([
+      { type: 'http', name: 'my_http', url: 'http://localhost:8000', headers: [{ name: 'Auth', value: '123' }] },
+      { type: 'sse', name: 'my_sse', url: 'http://localhost:8001', headers: [] },
     ]);
   });
 
   it('should skip disabled or incomplete servers', () => {
     const result = buildMcpServers([
-      { id: '1', enabled: false, name: 'off', command: 'npx', args: [] },
-      { id: '2', enabled: true, name: '', command: 'npx', args: [] },
-      { id: '3', enabled: true, name: 'empty', command: '', args: [] },
+      { type: 'stdio', id: '1', enabled: false, name: 'off', command: 'npx', args: [] },
+      { type: 'stdio', id: '2', enabled: true, name: '', command: 'npx', args: [] },
+      { type: 'stdio', id: '3', enabled: true, name: 'empty', command: '', args: [] },
+      { type: 'http', id: '4', enabled: true, name: 'nourl', url: '', headers: [] },
     ]);
 
     expect(result).toEqual([]);
@@ -300,15 +313,15 @@ describe('AcpClient session loading', () => {
     Reflect.set(client, 'request', request);
 
     await client.loadSession('s1', '/vault', [
-      { id: 'fs', enabled: true, name: ' filesystem ', command: ' npx ', args: [' -y ', '', '@modelcontextprotocol/server-filesystem'] },
-      { id: 'off', enabled: false, name: 'disabled', command: 'npx', args: [] },
+      { type: 'stdio', id: 'fs', enabled: true, name: ' filesystem ', command: ' npx ', args: [' -y ', '', '@modelcontextprotocol/server-filesystem'] },
+      { type: 'stdio', id: 'off', enabled: false, name: 'disabled', command: 'npx', args: [] },
     ]);
 
     expect(request).toHaveBeenCalledWith('session/load', {
       sessionId: 's1',
       cwd: '/vault',
       mcpServers: [
-        { name: 'filesystem', command: 'npx', args: ['-y', '@modelcontextprotocol/server-filesystem'], env: [] },
+        { type: 'stdio', name: 'filesystem', command: 'npx', args: ['-y', '@modelcontextprotocol/server-filesystem'], env: [] },
       ],
     });
     expect(client.getCurrentSessionId()).toBe('s1');
@@ -342,6 +355,6 @@ describe('AcpClient server request handling', () => {
   });
 
   it('uses the current release version for ACP clientInfo', () => {
-    expect(CLIENT_VERSION).toBe('0.0.21');
+    expect(CLIENT_VERSION).toBe('0.0.22');
   });
 });

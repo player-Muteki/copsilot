@@ -16,7 +16,7 @@ export interface PromptPart {
   data?: string;
   uri?: string;
   name?: string;
-  resource?: { text?: string; blob?: string; uri?: string };
+  resource?: { text?: string; blob?: string; uri?: string; mimeType?: string };
 }
 
 export interface SessionConfigOption {
@@ -77,7 +77,8 @@ export type ToolKind = 'read' | 'edit' | 'delete' | 'move' | 'search' | 'execute
 export type ToolCallContent =
   | { type: 'content'; content: { type: 'text'; text: string } }
   | { type: 'content'; content: { type: 'image'; mimeType: string; data: string } }
-  | { type: 'diff'; path: string; oldText: string; newText: string };
+  | { type: 'diff'; path: string; oldText: string; newText: string }
+  | { type: 'terminal'; terminalId: string };
 
 export type SessionUpdate =
   | { sessionUpdate: 'agent_message_chunk'; messageId: string; content: { type: string; text: string } }
@@ -131,14 +132,10 @@ export interface McpServerEnvVar {
   value: string;
 }
 
-export interface McpServerConfig {
-  id: string;
-  enabled: boolean;
-  name: string;
-  command: string;
-  args: string[];
-  env?: McpServerEnvVar[];
-}
+export type McpServerConfig =
+  | { type: 'stdio'; id: string; enabled: boolean; name: string; command: string; args: string[]; env?: McpServerEnvVar[] }
+  | { type: 'http'; id: string; enabled: boolean; name: string; url: string; headers?: { name: string; value: string }[] }
+  | { type: 'sse'; id: string; enabled: boolean; name: string; url: string; headers?: { name: string; value: string }[] };
 
 export interface CustomSkillDefinition {
   id: string;

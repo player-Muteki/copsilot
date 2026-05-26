@@ -170,7 +170,7 @@ describe('CopsidianSettingsTab locale refresh', () => {
       availableModels: [{ modelId: 'openai/gpt', name: 'GPT' }],
       availableCommands: [{ name: 'compact', description: 'Compact' }],
     });
-    plugin.settings.mcpServers.push({ id: 'fs', enabled: true, name: 'filesystem', command: 'npx', args: ['-y'] });
+    plugin.settings.mcpServers.push({ type: 'stdio', id: 'fs', enabled: true, name: 'filesystem', command: 'npx', args: ['-y'], env: [] });
     const tab = new CopsidianSettingsTab(plugin);
 
     tab.display();
