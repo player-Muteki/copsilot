@@ -42,6 +42,24 @@ Language changes apply immediately to the settings tab and open Copsidian views,
 
 **MCP Servers** — Configure local MCP servers in Settings and attach them automatically when creating or restoring OpenCode sessions.
 
+## ACP Capability Matrix
+
+| Capability | Status | Note |
+|---|---|---|
+| newSession / loadSession / listSessions / closeSession / forkSession / resumeSession | ✅ | Includes method alias fallback |
+| session/update (12 update types) | ✅ | Full parseSessionUpdate coverage |
+| requestPermission (allow_once/allow_always/reject_once/reject_always) | ✅ | safe / plan / yolo modes |
+| MCP stdio | ✅ | Includes env configuration |
+| MCP http / sse | ✅ | Introduced in v0.0.22 |
+| promptCapabilities.image | ✅ | Drag-drop support |
+| promptCapabilities.audio | 🟡 | Types defined, UI not implemented |
+| terminal/* (create/output/kill/wait_for_exit/release) | ❌ | Planned (v0.0.31) |
+| fs/read_text_file / fs/write_text_file | ❌ | Planned (v0.0.30) |
+| authMethods | 🟡 | Prompt only; login terminal not implemented |
+| agentCapabilities negotiation-driven UI | 🟡 | Landing in v0.0.24 |
+
+Legend: ✅ supported / 🟡 partially supported / ❌ not supported.
+
 ## Requirements
 
 - [OpenCode CLI](https://opencode.ai) installed and accessible
@@ -277,6 +295,24 @@ Licensed under the [MIT License](LICENSE).
 语言切换会立即应用到设置页和已打开的 Copsidian 视图，包括通知、工具栏文案、行内编辑界面和运行时错误提示。所选语言会在插件重启后保持生效。
 
 **MCP 服务器** — 在设置中配置本地 MCP 服务器，新建或恢复 OpenCode 会话时自动附加。
+
+## ACP 能力矩阵
+
+| 能力 | 状态 | 说明 |
+|---|---|---|
+| newSession / loadSession / listSessions / closeSession / forkSession / resumeSession | ✅ | 含方法别名回退 |
+| session/update（12 种 update 类型） | ✅ | parseSessionUpdate 全覆盖 |
+| requestPermission（allow_once/allow_always/reject_once/reject_always） | ✅ | safe / plan / yolo 三模式 |
+| MCP stdio | ✅ | 含 env 配置 |
+| MCP http / sse | ✅ | v0.0.22 引入 |
+| promptCapabilities.image | ✅ | drag-drop 支持 |
+| promptCapabilities.audio | 🟡 | 类型已定义，UI 未实现 |
+| terminal/*（create/output/kill/wait_for_exit/release） | ❌ | 规划中（v0.0.31） |
+| fs/read_text_file / fs/write_text_file | ❌ | 规划中（v0.0.30） |
+| authMethods | 🟡 | 仅显示提示，未实现登录终端 |
+| agentCapabilities 协商驱动 UI | 🟡 | v0.0.24 落地中 |
+
+图例：✅ 已支持 / 🟡 部分支持 / ❌ 未支持。
 
 ## 系统要求
 
