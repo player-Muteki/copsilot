@@ -3,6 +3,7 @@ main.js
 main.js.map
 styles.css
 release/
+copsidian-qa-vault/
 *.tar.gz
 .claude/
 .omo/

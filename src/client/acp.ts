@@ -22,7 +22,7 @@ import type { AcpResponse } from '../types';
 import { t } from '../i18n/index';
 import { AcpJsonRpcTransport } from './AcpJsonRpcTransport';
 
-export const CLIENT_VERSION = '0.0.24';
+export const CLIENT_VERSION = '0.0.25';
 
 export interface AcpSessionMeta {
   availableCommands: AvailableCommand[];
@@ -209,6 +209,7 @@ export class AcpClient implements OpencodeClient {
   private readonly maxReconnectAttempts = 3;
   private isIntentionalDisconnect = false;
   private methodCache = new Map<AcpLogicalMethod, string>();
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(cmdPath: string, cwd?: string) {
     this.cmdPath = cmdPath;
@@ -221,6 +222,10 @@ export class AcpClient implements OpencodeClient {
   isConnected(): boolean { return this.connected; }
 
   async connect(): Promise<void> {
+    if (this.connected) return;
+    this.isIntentionalDisconnect = false;
+    this.clearReconnectTimer();
+
     const cmd = this.cmdPath.replace(/^"(.+)"$/, '$1').replace(/^'(.+)'$/, '$1');
     const args = ['acp'];
     const cwd = this.cwd ?? process.cwd();
@@ -231,56 +236,47 @@ export class AcpClient implements OpencodeClient {
       args: spawnInfo.args,
       cwd,
     };
-    this.subprocess = new AcpSubprocess(launchSpec);
-    this.subprocess.start();
+    const subprocess = new AcpSubprocess(launchSpec);
+    this.subprocess = subprocess;
 
-    this.transport = new AcpJsonRpcTransport({
-      input: this.subprocess.stdout!,
-      output: this.subprocess.stdin!,
-    });
-    this.transport.start();
-
-    this.transport.onNotification('session/update', (params) => {
-      const p = params as Record<string, unknown> | undefined;
-      const update = this.parseUpdate(p?.update as Record<string, unknown> | undefined);
-      if (update) {
-        this.applySessionUpdate(update);
-        if (this.chunkHandler) this.chunkHandler(update);
-      }
-    });
-
-    this.transport.onRequest('request_permission', (params) => {
-      return this.handleServerRequestPermission(params as Record<string, unknown>);
-    });
-
-    this.subprocess.onClose((error) => {
-      this.connected = false;
-      const stderrMsg = this.subprocess?.getStderrSnapshot() || '';
-      this.subprocess = null;
-
-      if (error) {
-        console.error('[copsidian] process error:', error, 'stderr:', stderrMsg);
-        this.transport?.dispose(error);
-      } else {
-        console.error('[copsidian] process exited. stderr:', stderrMsg);
-        this.transport?.dispose(new Error(t().acp.processExited.replace('{code}', t().acp.unknownCode)));
+    try {
+      subprocess.start();
+      const input = subprocess.stdout;
+      const output = subprocess.stdin;
+      if (!input || !output) {
+        throw new Error(t().acp.stdinNotWritable);
       }
 
-      this.onClose?.();
+      const transport = new AcpJsonRpcTransport({ input, output });
+      this.transport = transport;
+      transport.start();
 
-      // Auto-reconnect if not intentional disconnect
-      if (!this.isIntentionalDisconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
-        this.scheduleReconnect();
-      }
-    });
+      transport.onNotification('session/update', (params) => {
+        const p = params as Record<string, unknown> | undefined;
+        const update = this.parseUpdate(p?.update as Record<string, unknown> | undefined);
+        if (update) {
+          this.applySessionUpdate(update);
+          if (this.chunkHandler) this.chunkHandler(update);
+        }
+      });
 
-    const response = await this.request('initialize', {
-      protocolVersion: 1,
-      clientInfo: { name: 'copsidian', version: CLIENT_VERSION },
-      clientCapabilities: {},
-    }) as Record<string, unknown>;
+      transport.onRequest('request_permission', (params) => {
+        return this.handleServerRequestPermission(params as Record<string, unknown>);
+      });
+
+      subprocess.onClose((error) => this.handleSubprocessClose(subprocess, error));
+
+      const response = await this.request('initialize', {
+        protocolVersion: 1,
+        clientInfo: { name: 'copsidian', version: CLIENT_VERSION },
+        clientCapabilities: {},
+      }) as Record<string, unknown>;
       this.agentCapabilities = (response.agentCapabilities as AgentCapabilities) ?? null;
-    this.connected = true;
+      this.connected = true;
+    } catch (error) {
+      await this.disposeConnection(error instanceof Error ? error : new Error(String(error)), true);
+      throw error;
+    }
   }
 
   getAgentCapabilities(): AgentCapabilities | null {
@@ -290,11 +286,8 @@ export class AcpClient implements OpencodeClient {
   async disconnect(): Promise<void> {
     this.isIntentionalDisconnect = true;
     this.reconnectAttempts = 0;
-
-    if (this.subprocess) {
-      await this.subprocess.shutdown();
-      this.subprocess = null;
-    }
+    this.clearReconnectTimer();
+    await this.disposeConnection(new Error('Disconnected'), true);
   }
 
   async createSession(cwd?: string, mcpServers: McpServerConfig[] = []): Promise<string> {
@@ -524,6 +517,44 @@ export class AcpClient implements OpencodeClient {
     throw lastError;
   }
 
+  private clearReconnectTimer(): void {
+    if (!this.reconnectTimer) return;
+    clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = null;
+  }
+
+  private async disposeConnection(error?: Error, shutdownSubprocess = false): Promise<void> {
+    const transport = this.transport;
+    const subprocess = this.subprocess;
+    this.transport = null;
+    this.subprocess = null;
+    this.connected = false;
+
+    transport?.dispose(error);
+    if (shutdownSubprocess) {
+      await subprocess?.shutdown();
+    }
+  }
+
+  private handleSubprocessClose(subprocess: AcpSubprocess, error?: Error): void {
+    if (this.subprocess !== subprocess) return;
+
+    const stderrMsg = subprocess.getStderrSnapshot() || '';
+    const closeError = error ?? new Error(t().acp.processExited.replace('{code}', t().acp.unknownCode));
+    if (error) {
+      console.error('[copsidian] process error:', error, 'stderr:', stderrMsg);
+    } else {
+      console.error('[copsidian] process exited. stderr:', stderrMsg);
+    }
+
+    void this.disposeConnection(closeError).then(() => {
+      this.onClose?.();
+      if (!this.isIntentionalDisconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
+        this.scheduleReconnect();
+      }
+    });
+  }
+
   async reconnect(): Promise<void> {
     await this.disconnect().catch(() => {});
     this.isIntentionalDisconnect = false;
@@ -532,18 +563,19 @@ export class AcpClient implements OpencodeClient {
   }
 
   private scheduleReconnect(): void {
+    if (this.isIntentionalDisconnect || this.reconnectTimer) return;
     this.reconnectAttempts++;
     const delay = 2000 * this.reconnectAttempts; // Exponential backoff
-    setTimeout(() => {
-      if (!this.connected && this.onReconnect) {
-        this.reconnect().then(() => this.onReconnect?.()).then(() => {
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      if (this.isIntentionalDisconnect || this.connected || !this.onReconnect) return;
+      this.connect().then(() => this.onReconnect?.()).then(() => {
           this.reconnectAttempts = 0;
         }).catch(() => {
-          if (this.reconnectAttempts < this.maxReconnectAttempts) {
-            this.scheduleReconnect();
-          }
-        });
-      }
+        if (!this.isIntentionalDisconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
+          this.scheduleReconnect();
+        }
+      });
     }, delay);
   }
 

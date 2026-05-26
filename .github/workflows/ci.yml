@@ -26,6 +26,9 @@ jobs:
       - name: TypeScript check
         run: npm run check
 
+      - name: Lint
+        run: npm run lint || true
+
       - name: Build
         run: npm run build
 

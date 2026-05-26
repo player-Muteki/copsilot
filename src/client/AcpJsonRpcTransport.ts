@@ -31,7 +31,9 @@ export class AcpJsonRpcTransport {
     private readonly defaultTimeoutMs = DEFAULT_TIMEOUT_MS,
   ) {}
 
-  get isClosed(): boolean { return this.disposed; }
+  get isClosed(): boolean {
+    return this.disposed;
+  }
 
   start(): void {
     if (this.readline || this.disposed) return;
@@ -71,14 +73,21 @@ export class AcpJsonRpcTransport {
 
   onNotification(method: string, handler: NotificationHandler): () => void {
     let handlers = this.notificationHandlers.get(method);
-    if (!handlers) { handlers = new Set(); this.notificationHandlers.set(method, handlers); }
+    if (!handlers) {
+      handlers = new Set();
+      this.notificationHandlers.set(method, handlers);
+    }
     handlers.add(handler);
-    return () => { handlers.delete(handler); };
+    return () => {
+      handlers.delete(handler);
+    };
   }
 
   onRequest(method: string, handler: RequestHandler): () => void {
     this.requestHandlers.set(method, handler);
-    return () => { this.requestHandlers.delete(method); };
+    return () => {
+      this.requestHandlers.delete(method);
+    };
   }
 
   rejectPending(error: Error): void {
@@ -102,13 +111,18 @@ export class AcpJsonRpcTransport {
       this.streams.output.write(JSON.stringify(msg) + '\n');
     } catch (e) {
       console.error('[copsidian] send error:', e);
+      this.dispose(e instanceof Error ? e : new AcpTransportError('JSON-RPC output write failed'));
     }
   }
 
   private handleLine(line: string): void {
     if (!line.trim()) return;
     let parsed: Record<string, unknown>;
-    try { parsed = JSON.parse(line); } catch { return; }
+    try {
+      parsed = JSON.parse(line);
+    } catch {
+      return;
+    }
 
     const id = typeof parsed.id === 'number' ? parsed.id : undefined;
     const hasResult = parsed.result !== undefined;
@@ -128,13 +142,21 @@ export class AcpJsonRpcTransport {
       if (entry) {
         if (entry.timeout) clearTimeout(entry.timeout);
         const errObj = parsed.error as { code?: number; message?: string; data?: unknown };
-        entry.reject(new AcpProtocolError(errObj?.message ?? 'Unknown error', entry.method, errObj?.code, errObj?.data));
+        entry.reject(
+          new AcpProtocolError(errObj?.message ?? 'Unknown error', entry.method, errObj?.code, errObj?.data),
+        );
       }
     } else if (hasMethod && id === undefined) {
       const handlers = this.notificationHandlers.get(parsed.method as string);
       if (handlers) {
         for (const handler of handlers) {
-          try { handler((parsed as { params?: unknown }).params); } catch { /* ignore */ }
+          try {
+            Promise.resolve(handler((parsed as { params?: unknown }).params)).catch((error: unknown) =>
+              console.error('[copsidian] notification handler failed:', error),
+            );
+          } catch (error) {
+            console.error('[copsidian] notification handler failed:', error);
+          }
         }
       }
     } else if (hasMethod && id !== undefined) {
@@ -142,7 +164,10 @@ export class AcpJsonRpcTransport {
       if (handler) {
         handler((parsed as { params?: unknown }).params)
           .then((result) => this.send({ jsonrpc: '2.0', id, result }))
-          .catch((err) => this.send({ jsonrpc: '2.0', id, error: { code: -32000, message: err.message } }));
+          .catch((err: unknown) => {
+            const message = err instanceof Error ? err.message : String(err);
+            this.send({ jsonrpc: '2.0', id, error: { code: -32000, message } });
+          });
       }
     }
   }

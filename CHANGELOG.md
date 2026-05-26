@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.0.25 - 2026-05-26
+
+### Tooling
+- Add ESLint, Prettier, simple-git-hooks, and lint-staged configuration for conservative TypeScript linting and formatting.
+- Ignore generated build artifacts, release output, and local QA vault data.
+- Add a non-blocking CI lint step.
+
+### Documentation
+- Add English and Chinese ACP capability matrices to the README.
+
+### Known issues
+- `npm run lint` currently reports 32 warnings in existing source files.
+
 ## 0.0.24 - 2026-05-26
 
 ### Added

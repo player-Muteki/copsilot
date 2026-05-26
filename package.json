@@ -1,6 +1,6 @@
 {
   "name": "copsidian",
-  "version": "0.0.24",
+  "version": "0.0.25",
   "description": "Embed the complete OpenCode agent inside Obsidian sidebar",
   "main": "main.js",
   "scripts": {
@@ -10,7 +10,9 @@
     "release": "tsc -noEmit && node esbuild.config.mjs --minify --release",
     "release:check": "node scripts/check-release.mjs --artifacts",
     "check": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "eslint src --ext .ts",
+    "format": "node scripts/format.mjs"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "^0.21.1",
@@ -18,12 +20,27 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^8.60.0",
+    "@typescript-eslint/parser": "^8.60.0",
     "@vitest/coverage-v8": "^4.1.7",
     "esbuild": "^0.28.0",
+    "eslint": "^8.57.1",
     "happy-dom": "^20.9.0",
+    "lint-staged": "^17.0.5",
     "obsidian": "latest",
+    "prettier": "^3.8.3",
+    "simple-git-hooks": "^2.13.1",
     "typescript": "^5.7.0",
     "vitest": "^4.1.7"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged"
+  },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   },
   "author": "YouSheng Kang",
   "license": "MIT",

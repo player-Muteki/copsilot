@@ -98,20 +98,24 @@ describe('AcpSubprocess', () => {
     expect(subprocess.isAlive()).toBe(false);
   });
 
-  it('onClose() listener receives exit error', () => {
+  it('onClose() listener receives undefined on normal exit', () => {
     const subprocess = new AcpSubprocess(launchSpec);
     const closeListener = vi.fn();
 
     subprocess.onClose(closeListener);
     subprocess.start();
 
-    // Normal exit (code 0, signal null)
     mockProc.emit('exit', 0, null);
     expect(closeListener).toHaveBeenCalledWith(undefined);
+  });
 
-    closeListener.mockClear();
+  it('onClose() listener receives exit error on non-zero exit', () => {
+    const subprocess = new AcpSubprocess(launchSpec);
+    const closeListener = vi.fn();
 
-    // Error exit
+    subprocess.onClose(closeListener);
+    subprocess.start();
+
     mockProc.emit('exit', 1, null);
     expect(closeListener).toHaveBeenCalledTimes(1);
     const errorArg = closeListener.mock.calls[0][0];
