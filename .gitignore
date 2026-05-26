@@ -1,8 +1,5 @@
 node_modules/
-main.js
-main.js.map
 styles.css
-release/
 *.tar.gz
 .claude/
 .omo/
@@ -10,3 +7,8 @@ release/
 ARCHITECTURE_REPORT.md
 NEXT_STEPS.md
 ANALYSIS_OPENCODE_CLAUDIAN.md
+
+main.js
+main.js.map
+release/
+copsidian-qa-vault/

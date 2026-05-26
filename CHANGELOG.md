@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.25
+
+### Tooling
+- Added engineering tooling with ESLint, Prettier, lint-staged, and simple-git-hooks to enforce consistent code style without manually configuring husy.
+- Excluded build artifacts (`main.js`, `main.js.map`, `release/`, `copsidian-qa-vault/`) from git tracking.
+
+### Documentation
+- Added an "ACP Capability Matrix" to README.md to help users and contributors understand the current implementation status of Agent Client Protocol features.
+
+### Known issues
+- 32 ESLint warnings primarily related to `any` types remaining. These are suppressed as warnings for now.
+
 ## 0.0.23 - 2026-05-26
 
 ### Added
