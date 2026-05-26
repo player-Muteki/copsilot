@@ -19,7 +19,7 @@ import type { AcpResponse } from '../types';
 import { t } from '../i18n/index';
 import { AcpJsonRpcTransport } from './AcpJsonRpcTransport';
 
-export const CLIENT_VERSION = '0.0.19';
+export const CLIENT_VERSION = '0.0.21';
 
 export interface AcpSessionMeta {
   availableCommands: AvailableCommand[];
