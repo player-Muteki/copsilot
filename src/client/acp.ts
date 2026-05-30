@@ -29,7 +29,7 @@ import type { NormalizedUpdate } from '../types';
 import { FsDelegate } from './fsDelegate';
 import { TerminalManager } from './terminalManager';
 
-export const CLIENT_VERSION = '0.0.34';
+export const CLIENT_VERSION = '0.0.35';
 
 export interface AcpSessionMeta {
   availableCommands: AvailableCommand[];
@@ -413,7 +413,9 @@ export class AcpClient implements OpencodeClient {
     this.activeAbortController = new AbortController();
     const signal = this.activeAbortController.signal;
 
-    return (this.requestWithFallback('prompt', { sessionId: id, prompt: parts }, undefined, signal) as Promise<AcpResponse>)
+    // Use 0 timeout to disable transport-level timeout for streaming
+    // The idle timeout in AgentRuntime handles cancellation
+    return (this.requestWithFallback('prompt', { sessionId: id, prompt: parts }, 0, signal) as Promise<AcpResponse>)
       .finally(() => {
         if (this.activeStreamSessionId === id) {
           this.activeStreamSessionId = null;

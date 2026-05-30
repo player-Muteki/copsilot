@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.35 - 2026-05-30
+
+### Fixed
+- Fix toolbar options not loading after reconnect - now calls `loadToolbarOptions()` after connection establishment.
+- Fix abort handler in `AcpJsonRpcTransport` to not prematurely reject with `AcpAbortError`, allowing proper request cleanup.
+
+### Changed
+- Prompt requests now use transport-level timeout of 0 (disabled), matching claudian's `ACP_PROMPT_TURN_TIMEOUT_MS` approach. The idle timeout in `AgentRuntime` handles cancellation instead.
+- `AgentRuntime.sendMessage` now throws `AcpTimeoutError` instead of generic error for timeout, providing better error classification.
+
 ## 0.0.34 - 2026-05-28
 
 ### Fixed

@@ -101,6 +101,7 @@ export class CopsidianViewController {
 			this.bindClientHandlers();
 			this.callbacks.onHideReconnectBtn();
 			this.deps.welcomeView.updateStatus(true);
+			this.loadToolbarOptions();
 			return true;
 		}
 
@@ -114,6 +115,7 @@ export class CopsidianViewController {
 		this.bindClientHandlers();
 		this.callbacks.onHideReconnectBtn();
 		this.deps.welcomeView.updateStatus(true);
+		this.loadToolbarOptions();
 		return true;
 	}
 

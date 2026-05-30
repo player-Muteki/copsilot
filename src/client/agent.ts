@@ -16,7 +16,7 @@ import type { OpencodeClient, ClientHandlers } from './index';
 import type { AgentCapabilities } from '../types';
 import type { SessionMeta } from '../types';
 import { AcpClient } from './acp';
-import { t } from '../i18n/index';
+import { AcpTimeoutError } from './AcpErrors';
 
 export class AgentRuntime implements OpencodeClient {
   permissionMode = 'safe';
@@ -47,8 +47,7 @@ export class AgentRuntime implements OpencodeClient {
       const resetTimeout = () => {
         if (timeout) clearTimeout(timeout);
         timeout = setTimeout(() => {
-          this.acp.cancel(id).catch(() => {});
-          reject(new Error(t().acp.requestTimeout));
+          reject(new AcpTimeoutError('sendMessage', timeoutMs));
         }, timeoutMs);
       };
 

@@ -74,8 +74,8 @@ export class AcpJsonRpcTransport {
         abortHandler = () => {
           if (timeout) clearTimeout(timeout);
           this.pending.delete(id);
-          // Don't send cancel request when aborting - the abort itself handles cancellation
-          reject(new AcpAbortError(method));
+          // Don't throw AcpAbortError here, we still want to wait for the actual request
+          // to abort or we send a cancel request manually.
         };
         signal.addEventListener('abort', abortHandler, { once: true });
       }
