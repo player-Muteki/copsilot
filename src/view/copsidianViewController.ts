@@ -383,10 +383,20 @@ export class CopsidianViewController {
 			const parts = await this.buildParts(text, refs);
 			if (this.state.sessionId !== sessionId || !this.busy) return;
 			this.callbacks.onClearPendingImageChips();
-			await c.sendMessage(sessionId, parts, (ch: NormalizedUpdate) => {
+			const response = await c.sendMessage(sessionId, parts, (ch: NormalizedUpdate) => {
 				if (!this.busy || this.state.sessionId !== sessionId) return;
 				this.streamCtrl.handleChunk(ch);
 			});
+			if (response?.usage) {
+				this.state.usage = {
+					totalTokens: response.usage.totalTokens ?? 0,
+					inputTokens: response.usage.inputTokens ?? 0,
+					outputTokens: response.usage.outputTokens ?? 0,
+					thoughtTokens: response.usage.thoughtTokens,
+					cost: this.state.usage?.cost,
+				};
+				this.deps.toolbar.updateContextMeter(this.state.usage);
+			}
 		} catch (e: unknown) {
 			if (!this.state.isConnected) return;
 			if (this.state.sessionId === sessionId) {

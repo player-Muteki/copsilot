@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.40 - 2026-05-30
+
+### Fixed
+- Fix token usage tracking: restore `response.usage` handling from prompt response (primary token source).
+- Fix token usage tracking: `usage_update` notification now merges with existing response usage instead of overwriting.
+- Fix toolbar spacing: consistent 6px gap between elements, model selector flex fills, permission toggle auto-pushes right.
+
 ## 0.0.39 - 2026-05-30
 
 ### Fixed

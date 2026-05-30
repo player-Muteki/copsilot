@@ -92,14 +92,18 @@ export class StreamController {
 				this.deps.onCommandsUpdate?.(ch.commands);
 				break;
 			}
-			case 'usage': {
-				state.usage = {
-					totalTokens: ch.totalTokens ?? ch.used ?? 0,
-					inputTokens: ch.inputTokens ?? 0,
-					outputTokens: ch.outputTokens ?? 0,
-					thoughtTokens: ch.thoughtTokens,
-					cost: ch.cost,
-				};
+		case 'usage': {
+				if (state.usage) {
+					if (ch.cost) state.usage.cost = ch.cost;
+				} else {
+					state.usage = {
+						totalTokens: ch.totalTokens ?? ch.used ?? 0,
+						inputTokens: ch.inputTokens ?? 0,
+						outputTokens: ch.outputTokens ?? 0,
+						thoughtTokens: ch.thoughtTokens,
+						cost: ch.cost,
+					};
+				}
 				this.deps.onUsageUpdate?.();
 				break;
 			}

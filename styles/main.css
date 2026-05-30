@@ -270,15 +270,20 @@
 .copsidian-toolbar-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
-.copsidian-toolbar-top {
-  /* model selector takes available space, mode buttons on the right */
+.copsidian-toolbar-top .copsidian-model-selector {
+  flex: 1;
+  min-width: 0;
 }
 
-.copsidian-toolbar-bottom {
-  /* compact row: effort, meter, permission, send */
+.copsidian-toolbar-top .copsidian-mode-group {
+  flex-shrink: 0;
+}
+
+.copsidian-toolbar-bottom .copsidian-perm-toggle {
+  margin-left: auto;
 }
 
 .copsidian-toolbar .tb-select {

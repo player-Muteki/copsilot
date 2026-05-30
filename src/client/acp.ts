@@ -29,7 +29,7 @@ import type { NormalizedUpdate } from '../types';
 import { FsDelegate } from './fsDelegate';
 import { TerminalManager } from './terminalManager';
 
-export const CLIENT_VERSION = '0.0.39';
+export const CLIENT_VERSION = '0.0.40';
 
 export interface AcpSessionMeta {
   availableCommands: AvailableCommand[];
