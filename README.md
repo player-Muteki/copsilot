@@ -94,7 +94,7 @@ Legend: ✅ supported / 🟡 partially supported / ❌ not supported.
    ```bash
    cd /path/to/vault/.obsidian/plugins
    git clone https://github.com/player-Muteki/copsilot.git
-   cd copsidian
+   cd copsilot
    ```
 
 2. Install dependencies and build:
@@ -227,7 +227,7 @@ Licensed under the [MIT License](LICENSE).
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=player-Muteki%2Fcopsidian&type=date&legend=top-left">
+<a href="https://www.star-history.com/?repos=player-Muteki%2Fcopsilot&type=date&legend=top-left">
  <picture>
    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=player-Muteki/copsilot&type=date&theme=dark&legend=top-left" />
    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=player-Muteki/copsilot&type=date&legend=top-left" />
@@ -244,7 +244,7 @@ Licensed under the [MIT License](LICENSE).
 
 # Copsilot 中文说明
 
-> [English](#copsidian) | 中文
+> [English](#copsilot) | 中文
 
 > Beta — 目前处于公开测试阶段。
 
@@ -334,7 +334,7 @@ Licensed under the [MIT License](LICENSE).
    ```bash
    cd /path/to/vault/.obsidian/plugins
    git clone https://github.com/player-Muteki/copsilot.git
-   cd copsidian
+   cd copsilot
    ```
 
 2. 安装依赖并构建：
@@ -467,7 +467,7 @@ src/
 
 ## Star 历史
 
-<a href="https://www.star-history.com/?repos=player-Muteki%2Fcopsidian&type=date&legend=top-left">
+<a href="https://www.star-history.com/?repos=player-Muteki%2Fcopsilot&type=date&legend=top-left">
  <picture>
    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=player-Muteki/copsilot&type=date&theme=dark&legend=top-left" />
    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=player-Muteki/copsilot&type=date&legend=top-left" />

@@ -1,19 +1,15 @@
 # Changelog
 
-## 0.1.1 - 2026-05-30
-
-### Changed
-- Context arc meter moved to right of "Copsilot" title in header (was left of title).
-- All slash commands now route through ACP agent — removed local `compact` interception.
-- `isBuiltInCommand()` always returns false; no commands are handled locally.
-
-## 0.1.0 - 2026-05-30
+## 0.1.0 - 2026-05-31
 
 First public beta release.
 
 ### Changed
+- Context arc meter moved to right of "Copsilot" title in header.
+- All slash commands now route through ACP agent — removed local `compact` interception.
+- `isBuiltInCommand()` always returns false; no commands are handled locally.
 - Toolbar redesigned as single row: model selector, mode cycle button, effort dropdown, permission cycle, send button.
-- Context arc meter moved to header bar (left of title), freeing toolbar space.
+- Context arc meter moved to header bar, freeing toolbar space.
 - Mode selector changed from segmented button group to single click-to-cycle button.
 - Permission toggle uses color-coded border (green/amber/orange) instead of dot indicator.
 - Sending indicator merged into send button (button turns red "Stop" during generation).
