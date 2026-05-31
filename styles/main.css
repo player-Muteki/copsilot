@@ -568,7 +568,7 @@
 
 .copsilot-arc-fill {
   fill: none;
-  stroke: #2dd4bf;
+  stroke: var(--text-accent);
   stroke-width: 3;
   stroke-linecap: round;
   transform: rotate(180deg);
@@ -588,7 +588,7 @@
 
 /* Warning state (75-89%) */
 .copsilot-arc-meter.warning .copsilot-arc-fill {
-  stroke: #fbbf24;
+  stroke: var(--text-warning);
 }
 
 .copsilot-arc-meter.warning .copsilot-arc-pct {
@@ -597,7 +597,7 @@
 
 /* Critical state (90%+) */
 .copsilot-arc-meter.critical .copsilot-arc-fill {
-  stroke: #f87171;
+  stroke: var(--text-error);
   animation: copsilot-arc-pulse 1.5s ease-in-out infinite;
 }
 
