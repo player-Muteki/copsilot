@@ -3,10 +3,8 @@
   "name": "Copsilot",
   "author": "player-Muteki",
   "authorUrl": "https://github.com/player-Muteki",
-  "description": "Embed the complete OpenCode agent inside Obsidian sidebar",
+  "description": "Embed the complete OpenCode agent inside your sidebar.",
   "minAppVersion": "1.7.0",
   "isDesktopOnly": true,
-  "version": "0.1.0",
-  "js": "main.js",
-  "css": "styles.css"
+  "version": "0.1.0"
 }
