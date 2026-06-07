@@ -8,16 +8,12 @@ import type {
 	PromptPart,
 	SessionConfigOption,
 	PermissionRequest,
-	PermissionOption,
 	AvailableCommand,
 	ModelOption,
 	ModeOption,
 	SessionSnapshot,
 	McpServerConfig,
 	AgentCapabilities,
-	FsCapabilityMode,
-	TerminalCapabilityMode,
-	TerminalCreateParams,
 } from '../types';
 import type { OpencodeClient } from './index';
 import type { SessionMeta } from '../types';
@@ -26,8 +22,7 @@ import { t } from '../i18n/index';
 import { AcpJsonRpcTransport } from './AcpJsonRpcTransport';
 import { SessionUpdateNormalizer } from './sessionUpdateNormalizer';
 import type { NormalizedUpdate } from '../types';
-import { FsDelegate } from './fsDelegate';
-import { TerminalManager } from './terminalManager';
+import { AcpRequestHandler } from './AcpRequestHandler';
 
 export const CLIENT_VERSION = '0.1.0';
 
@@ -196,6 +191,7 @@ export class AcpClient implements OpencodeClient {
 	private subprocess: AcpSubprocess | null = null;
 	private connected = false;
 	private transport: AcpJsonRpcTransport | null = null;
+	private requestHandler: AcpRequestHandler | null = null;
 	private agentCapabilities: AgentCapabilities | null = null;
 	private activeStreamSessionId: string | null = null;
 	private activeAbortController: AbortController | null = null;
@@ -204,10 +200,6 @@ export class AcpClient implements OpencodeClient {
 	private sessionId_: string | null = null;
 	private cmdPath: string;
 	private cwd?: string;
-	private fsDelegate: FsDelegate | null = null;
-	private fsCapabilityMode: FsCapabilityMode = 'enabled';
-	private terminalManager: TerminalManager | null = null;
-	private terminalCapabilityMode: TerminalCapabilityMode = 'enabled';
 	private availableCommands: AvailableCommand[] = [{ name: 'compact', description: 'compact the session' }];
 	private availableModels: ModelOption[] = [];
 	private availableModes: ModeOption[] = [];
@@ -264,16 +256,11 @@ export class AcpClient implements OpencodeClient {
 			this.transport = transport;
 			transport.start();
 
-			// Initialize FsDelegate for vault boundary checks
-			this.fsDelegate = new FsDelegate({
+			// Initialize AcpRequestHandler (manages FS, terminal, permission handlers)
+			this.requestHandler = new AcpRequestHandler({
+				transport,
 				vaultPath: cwd,
-				maxBytes: 8000, // Will be updated when settings are applied
-			});
-
-			// Initialize TerminalManager
-			this.terminalManager = new TerminalManager({
-				timeoutMs: 30000, // Will be updated when settings are applied
-				maxOutputBytes: 100000, // Will be updated when settings are applied
+				onPermissionRequest: this.onPermissionRequest,
 			});
 
 		transport.onNotification('session/update', (params) => {
@@ -291,54 +278,12 @@ export class AcpClient implements OpencodeClient {
 			}
 		});
 
-			transport.onRequest('request_permission', (params) => {
-				return this.handleServerRequestPermission(params as Record<string, unknown>);
-			});
-
-			// Register fs/read_text_file handler
-			transport.onRequest('fs/read_text_file', (params) => {
-				return this.handleReadTextFile(params as Record<string, unknown>);
-			});
-
-			// Register fs/write_text_file handler
-			transport.onRequest('fs/write_text_file', (params) => {
-				return this.handleWriteTextFile(params as Record<string, unknown>);
-			});
-
-			// Register terminal handlers
-			transport.onRequest('terminal/create', (params) => {
-				return this.handleTerminalCreate(params as Record<string, unknown>);
-			});
-			transport.onRequest('terminal/output', (params) => {
-				return this.handleTerminalOutput(params as Record<string, unknown>);
-			});
-			transport.onRequest('terminal/kill', (params) => {
-				return this.handleTerminalKill(params as Record<string, unknown>);
-			});
-			transport.onRequest('terminal/release', (params) => {
-				return this.handleTerminalRelease(params as Record<string, unknown>);
-			});
-			transport.onRequest('terminal/wait_for_exit', (params) => {
-				return this.handleTerminalWaitForExit(params as Record<string, unknown>);
-			});
-
 			subprocess.onClose((error) => this.handleSubprocessClose(subprocess, error));
 
-			const clientCapabilities: Record<string, unknown> = {};
-			if (this.fsCapabilityMode !== 'disabled') {
-				clientCapabilities.fs = {
-					readTextFile: true,
-					writeTextFile: this.fsCapabilityMode === 'enabled',
-				};
-			}
-			if (this.terminalCapabilityMode === 'enabled') {
-				clientCapabilities.terminal = true;
-			}
-
-			const response = await this.request('initialize', {
+			const response = await this.requestWithFallback('initialize', {
 				protocolVersion: 1,
 				clientInfo: { name: 'copsilot', version: CLIENT_VERSION },
-				clientCapabilities,
+				clientCapabilities: this.requestHandler.buildClientCapabilities(),
 			}) as Record<string, unknown>;
 			this.agentCapabilities = (response.agentCapabilities as AgentCapabilities) ?? null;
 			this.connected = true;
@@ -363,7 +308,10 @@ export class AcpClient implements OpencodeClient {
     const r = await this.requestWithFallback('newSession', { cwd: this.resolveCwd(cwd), mcpServers: buildMcpServers(mcpServers) }) as Record<string, unknown>;
     this.applySessionSnapshot(r);
     this.sessionId_ = (r.sessionId as string | undefined) ?? null;
-    return this.sessionId_ ?? '';
+    if (!this.sessionId_) {
+      throw new Error('Server did not return a session ID');
+    }
+    return this.sessionId_;
   }
 
   async loadSession(id: string, cwd?: string, mcpServers: McpServerConfig[] = []): Promise<void> {
@@ -389,7 +337,11 @@ export class AcpClient implements OpencodeClient {
   }
 
   async closeSession(id: string): Promise<void> {
-    await this.requestWithFallback('closeSession', { sessionId: id }).catch(() => {});
+    try {
+      await this.requestWithFallback('closeSession', { sessionId: id });
+    } catch (e) {
+      console.warn(`[copsilot] failed to close session ${id}:`, e);
+    }
   }
 
   async setMode(id: string, modeId: string): Promise<void> {
@@ -475,6 +427,17 @@ export class AcpClient implements OpencodeClient {
     this.onClose = handlers.onClose ?? undefined;
     this.onReconnect = handlers.onReconnect ?? undefined;
     this.onPermissionRequest = handlers.onPermissionRequest ?? undefined;
+    if (this.requestHandler && handlers.onPermissionRequest) {
+      this.requestHandler.onPermissionRequest = handlers.onPermissionRequest;
+    }
+  }
+
+  setFsCapabilityMode(mode: import('../types').FsCapabilityMode, maxBytes?: number): void {
+    this.requestHandler?.setFsCapabilityMode(mode, maxBytes);
+  }
+
+  setTerminalCapabilityMode(mode: import('../types').TerminalCapabilityMode, timeoutMs?: number, maxOutputBytes?: number): void {
+    this.requestHandler?.setTerminalCapabilityMode(mode, timeoutMs, maxOutputBytes);
   }
 
   // ── Private ──
@@ -542,198 +505,8 @@ export class AcpClient implements OpencodeClient {
     }
   }
 
-	private handleServerRequestPermission(params: Record<string, unknown>): Promise<unknown> {
-		return new Promise((resolve, reject) => {
-			const req: PermissionRequest = {
-				sessionId: params.sessionId as string,
-				toolCall: params.toolCall as PermissionRequest['toolCall'],
-				options: params.options as PermissionOption[],
-			};
-
-			const handler = this.onPermissionRequest ?? ((r: PermissionRequest) => this.requestPermission(r));
-			handler(req).then((decision: string) => {
-				resolve({ sessionId: params.sessionId, decision: { optionId: decision } });
-			}).catch((error: unknown) => {
-				console.error('[copsilot] permission request failed:', error);
-				// Fallback to default handler on failure
-				this.requestPermission(req).then((decision: string) => {
-					resolve({ sessionId: params.sessionId, decision: { optionId: decision } });
-				}).catch(reject);
-			});
-		});
-	}
-
-	private handleReadTextFile(params: Record<string, unknown>): Promise<unknown> {
-		return new Promise((resolve) => {
-			if (this.fsCapabilityMode === 'disabled' || !this.fsDelegate) {
-				resolve({ content: '', error: 'File system access is disabled' });
-				return;
-			}
-
-			const filePath = params.path as string;
-			if (!filePath) {
-				resolve({ content: '', error: 'Missing required parameter: path' });
-				return;
-			}
-
-			const result = this.fsDelegate.readTextFile(filePath);
-			resolve(result);
-		});
-	}
-
-	private handleWriteTextFile(params: Record<string, unknown>): Promise<unknown> {
-		return new Promise((resolve) => {
-			if (this.fsCapabilityMode !== 'enabled' || !this.fsDelegate) {
-				resolve({ success: false, error: 'File system write access is disabled' });
-				return;
-			}
-
-			const filePath = params.path as string;
-			const content = params.content as string;
-
-			if (!filePath) {
-				resolve({ success: false, error: 'Missing required parameter: path' });
-				return;
-			}
-
-			if (content === undefined || content === null) {
-				resolve({ success: false, error: 'Missing required parameter: content' });
-				return;
-			}
-
-			const result = this.fsDelegate.writeTextFile(filePath, content);
-			resolve(result);
-		});
-	}
-
-	setFsCapabilityMode(mode: FsCapabilityMode, maxBytes?: number): void {
-		this.fsCapabilityMode = mode;
-		if (this.fsDelegate && maxBytes !== undefined) {
-			this.fsDelegate = new FsDelegate({
-				vaultPath: this.cwd ?? process.cwd(),
-				maxBytes,
-			});
-		}
-	}
-
-	setTerminalCapabilityMode(mode: TerminalCapabilityMode, timeoutMs?: number, maxOutputBytes?: number): void {
-		this.terminalCapabilityMode = mode;
-		if (this.terminalManager) {
-			this.terminalManager = new TerminalManager({
-				timeoutMs: timeoutMs ?? 30000,
-				maxOutputBytes: maxOutputBytes ?? 100000,
-			});
-		}
-	}
-
-	private handleTerminalCreate(params: Record<string, unknown>): Promise<unknown> {
-		return new Promise((resolve) => {
-			if (this.terminalCapabilityMode !== 'enabled' || !this.terminalManager) {
-				resolve({ error: 'Terminal access is disabled' });
-				return;
-			}
-
-			const command = params.command as string;
-			if (!command) {
-				resolve({ error: 'Missing required parameter: command' });
-				return;
-			}
-
-			const createParams: TerminalCreateParams = {
-				command,
-				args: params.args as string[] | undefined,
-				cwd: params.cwd as string | undefined,
-				env: params.env as Record<string, string> | undefined,
-			};
-
-			const instance = this.terminalManager.create(createParams, this.cwd ?? process.cwd());
-			resolve({
-				terminalId: instance.terminalId,
-				pid: instance.pid,
-			});
-		});
-	}
-
-	private handleTerminalOutput(params: Record<string, unknown>): Promise<unknown> {
-		return new Promise((resolve) => {
-			if (!this.terminalManager) {
-				resolve({ error: 'Terminal manager not initialized' });
-				return;
-			}
-
-			const terminalId = params.terminalId as string;
-			if (!terminalId) {
-				resolve({ error: 'Missing required parameter: terminalId' });
-				return;
-			}
-
-			const result = this.terminalManager.output(terminalId);
-			resolve(result);
-		});
-	}
-
-	private handleTerminalKill(params: Record<string, unknown>): Promise<unknown> {
-		return new Promise((resolve) => {
-			if (!this.terminalManager) {
-				resolve({ error: 'Terminal manager not initialized' });
-				return;
-			}
-
-			const terminalId = params.terminalId as string;
-			if (!terminalId) {
-				resolve({ error: 'Missing required parameter: terminalId' });
-				return;
-			}
-
-			const success = this.terminalManager.kill(terminalId);
-			resolve({ success });
-		});
-	}
-
-	private handleTerminalRelease(params: Record<string, unknown>): Promise<unknown> {
-		return new Promise((resolve) => {
-			if (!this.terminalManager) {
-				resolve({ error: 'Terminal manager not initialized' });
-				return;
-			}
-
-			const terminalId = params.terminalId as string;
-			if (!terminalId) {
-				resolve({ error: 'Missing required parameter: terminalId' });
-				return;
-			}
-
-			const success = this.terminalManager.release(terminalId);
-			resolve({ success });
-		});
-	}
-
-	private handleTerminalWaitForExit(params: Record<string, unknown>): Promise<unknown> {
-		return new Promise((resolve) => {
-			if (!this.terminalManager) {
-				resolve({ error: 'Terminal manager not initialized' });
-				return;
-			}
-
-			const terminalId = params.terminalId as string;
-			if (!terminalId) {
-				resolve({ error: 'Missing required parameter: terminalId' });
-				return;
-			}
-
-			this.terminalManager.waitForExit(terminalId).then((result) => {
-				resolve(result || { error: 'Terminal not found' });
-			});
-		});
-	}
-
   private parseUpdate(u: Record<string, unknown> | undefined | null): SessionUpdate | null {
     return parseSessionUpdate(u);
-  }
-
-  private request(method: string, params?: Record<string, unknown>): Promise<unknown> {
-    if (!this.transport) return Promise.reject(new Error(t().acp.stdinNotWritable));
-    return this.transport.request(method, params);
   }
 
   private async requestWithFallback(logicalMethod: AcpLogicalMethod, params?: Record<string, unknown>, timeoutMs?: number, signal?: AbortSignal): Promise<unknown> {
@@ -773,9 +546,14 @@ export class AcpClient implements OpencodeClient {
   private async disposeConnection(error?: Error, shutdownSubprocess = false): Promise<void> {
     const transport = this.transport;
     const subprocess = this.subprocess;
+    const requestHandler = this.requestHandler;
     this.transport = null;
     this.subprocess = null;
+    this.requestHandler = null;
     this.connected = false;
+
+    // Clean up terminal processes and FS delegate on disconnect
+    requestHandler?.dispose();
 
     // Clear session state so reconnect reloads models/modes
     this.sessionId_ = null;

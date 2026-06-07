@@ -1,6 +1,8 @@
 import { AcpProtocolError } from './AcpErrors';
 import { describe, it, expect, vi } from 'vitest';
 import { AcpClient, CLIENT_VERSION, buildMcpServers, parseSessionUpdate, extractSessionSnapshot, extractConfigMeta, mergeAvailableCommands } from './acp';
+import { AcpRequestHandler } from './AcpRequestHandler';
+import { AcpJsonRpcTransport } from './AcpJsonRpcTransport';
 import type { SessionUpdate } from '../types';
 
 describe('parseSessionUpdate', () => {
@@ -330,14 +332,29 @@ describe('AcpClient session loading', () => {
 });
 
 
-describe('AcpClient server request handling', () => {
+describe('AcpRequestHandler permission handling', () => {
   it('falls back to a reject decision when permission UI handler fails', async () => {
-    const client = new AcpClient('opencode');
+    const mockTransport = {
+      onRequest: vi.fn(),
+      request: vi.fn(),
+      notify: vi.fn(),
+      start: vi.fn(),
+      dispose: vi.fn(),
+      rejectPending: vi.fn(),
+      isClosed: false,
+      onNotification: vi.fn(),
+    } as unknown as AcpJsonRpcTransport;
 
-    client.onPermissionRequest = vi.fn().mockRejectedValue(new Error('ui unavailable'));
+    const uiHandler = vi.fn().mockRejectedValue(new Error('ui unavailable'));
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const promise = Reflect.get(client, 'handleServerRequestPermission').call(client, {
+    const handler = new AcpRequestHandler({
+      transport: mockTransport,
+      vaultPath: '/test',
+      onPermissionRequest: uiHandler,
+    });
+
+    const result = await Reflect.get(handler, 'handleServerRequestPermission').call(handler, {
       sessionId: 's1',
       toolCall: { kind: 'edit', title: 'Edit file' },
       options: [
@@ -346,13 +363,12 @@ describe('AcpClient server request handling', () => {
       ],
     });
 
-    const result = await promise;
-
     expect(result).toEqual({
       sessionId: 's1',
       decision: { optionId: 'reject' }
     });
     consoleSpy.mockRestore();
+    handler.dispose();
   });
 
   it('uses the current release version for ACP clientInfo', () => {

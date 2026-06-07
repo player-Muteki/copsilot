@@ -374,6 +374,7 @@ export class CopsilotViewController {
 
 		try {
 			await this.syncRuntimeSession(sessionId);
+			if (this.state.sessionId !== sessionId || !this.busy) return;
 			const parts = await this.buildParts(text, refs);
 			if (this.state.sessionId !== sessionId || !this.busy) return;
 			this.callbacks.onClearPendingImageChips();

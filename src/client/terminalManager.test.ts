@@ -41,13 +41,39 @@ describe('TerminalManager', () => {
 			expect(instance.pid).toBe(12345);
 		});
 
-		it('spawns a process', () => {
+		it('spawns a process without shell', () => {
 			manager.create({ command: 'ls', args: ['-la'] }, '/vault');
 
 			expect(spawn).toHaveBeenCalledWith('ls', ['-la'], expect.objectContaining({
 				cwd: '/vault',
+				shell: false,
+			}));
+		});
+
+		it('uses shell for .cmd files', () => {
+			manager.create({ command: 'echo.cmd', args: ['hello'] }, '/vault');
+
+			expect(spawn).toHaveBeenCalledWith('echo.cmd', ['hello'], expect.objectContaining({
 				shell: true,
 			}));
+		});
+
+		it('uses shell for .bat files', () => {
+			manager.create({ command: 'git.bat', args: ['status'] }, '/vault');
+
+			expect(spawn).toHaveBeenCalledWith('git.bat', ['status'], expect.objectContaining({
+				shell: true,
+			}));
+		});
+
+		it('rejects disallowed commands', () => {
+			expect(() => manager.create({ command: 'suspicious-tool' }, '/vault'))
+				.toThrow('Command not allowed');
+		});
+
+		it('rejects empty command', () => {
+			expect(() => manager.create({ command: '' }, '/vault'))
+				.toThrow('Command is empty');
 		});
 	});
 

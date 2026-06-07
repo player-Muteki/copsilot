@@ -261,6 +261,7 @@ const zh: Locale = {
       args: '参数',
       argsDesc: '每行一个参数',
       env: '环境变量',
+      envWarning: '凭据（API 密钥、令牌）以明文存储在 Obsidian 设置中。',
       envName: '名称',
       envValue: '值',
       envAdd: '+ 添加变量',

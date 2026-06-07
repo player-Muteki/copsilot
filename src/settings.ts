@@ -779,6 +779,11 @@ export class CopsilotSettingsTab extends PluginSettingTab {
 
       const envDetails = block.createEl('details', { cls: 'copsilot-mcp-env-details' });
       envDetails.createEl('summary', { text: labels.env });
+      const securityNote = envDetails.createEl('p', {
+        cls: 'copsilot-mcp-env-warning',
+        text: labels.envWarning,
+      });
+      securityNote.style.cssText = 'font-size: var(--font-small); color: var(--text-warning); margin: 8px 0;';
 
       const renderEnvVars = () => {
         envDetails.querySelectorAll('.copsilot-mcp-env-var, .copsilot-mcp-env-add').forEach((el) => el.remove());

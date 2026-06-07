@@ -85,10 +85,11 @@ export class AgentRuntime implements OpencodeClient {
 
   async requestPermission(req: PermissionRequest): Promise<string> {
     if (this.permissionMode === 'yolo') {
-      const allow = req.options.find((o) => o.kind === 'allow_always');
-      if (allow) return allow.optionId;
+      const allowAlways = req.options.find((o) => o.kind === 'allow_always');
+      if (allowAlways) return allowAlways.optionId;
       return req.options[0]?.optionId ?? 'allow_once';
     }
+
     if (this.permissionMode === 'plan') {
       if (['read', 'search'].includes(req.toolCall.kind)) {
         const allow = req.options.find((o) => o.kind === 'allow_always' || o.kind === 'allow_once');
@@ -96,7 +97,9 @@ export class AgentRuntime implements OpencodeClient {
       }
       const reject = req.options.find((o) => o.kind === 'reject_always' || o.kind === 'reject_once');
       if (reject) return reject.optionId;
+      return req.options[0]?.optionId ?? 'reject_once';
     }
+
     const reject = req.options.find((o) => o.kind === 'reject_always' || o.kind === 'reject_once');
     return reject?.optionId ?? req.options[0]?.optionId ?? 'reject_once';
   }

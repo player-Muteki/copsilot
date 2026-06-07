@@ -259,6 +259,7 @@ const en = {
       args: 'Arguments',
       argsDesc: 'One argument per line',
       env: 'Environment Variables',
+      envWarning: 'Credentials (API keys, tokens) are stored in plain text in Obsidian settings.',
       envName: 'Name',
       envValue: 'Value',
       envAdd: '+ Add Variable',

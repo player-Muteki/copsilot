@@ -6,9 +6,45 @@ export interface TerminalManagerOptions {
 	maxOutputBytes: number;
 }
 
+const ALLOWED_COMMANDS = new Set([
+	'sh', 'bash', 'zsh', 'dash', 'ksh',
+	'cmd', 'powershell', 'pwsh',
+	'node', 'python', 'python3', 'pip', 'pip3',
+	'git', 'npm', 'npx', 'yarn', 'pnpm', 'bun', 'deno',
+	'cat', 'grep', 'find', 'ls', 'echo', 'head', 'tail', 'wc', 'sort', 'uniq', 'cut', 'tee',
+	'which', 'where', 'type', 'date', 'sleep', 'env', 'printenv', 'pwd',
+	'mkdir', 'rmdir', 'rm', 'cp', 'mv', 'chmod', 'chown',
+	'curl', 'wget', 'http',
+	'opencode',
+]);
+
+export class TerminalError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = 'TerminalError';
+	}
+}
+
+function getBaseCommand(command: string): string {
+	return command.trim().split(/[\\/]/).pop()?.split(/\s+/)[0]?.toLowerCase() ?? '';
+}
+
+function isAllowedCommand(command: string): boolean {
+	const base = getBaseCommand(command);
+	if (!base) return false;
+	const withoutExt = base.replace(/\.(exe|cmd|bat|ps1|sh)$/i, '');
+	return ALLOWED_COMMANDS.has(withoutExt);
+}
+
+interface ExitWaiter {
+	resolve: (value: { exitCode: number | null; signal: string | null } | null) => void;
+	timeout: NodeJS.Timeout;
+}
+
 export class TerminalManager {
 	private terminals = new Map<string, TerminalInstance>();
 	private processes = new Map<string, ChildProcess>();
+	private exitWaiters = new Map<string, ExitWaiter>();
 	private nextId = 1;
 	private timeoutMs: number;
 	private maxOutputBytes: number;
@@ -18,13 +54,18 @@ export class TerminalManager {
 		this.maxOutputBytes = options.maxOutputBytes;
 	}
 
-	/**
-	 * Create a new terminal and start executing a command.
-	 */
 	create(params: TerminalCreateParams, vaultPath: string): TerminalInstance {
 		const terminalId = `term-${this.nextId++}`;
 		const cwd = params.cwd || vaultPath;
 		const args = params.args || [];
+
+		if (!params.command || !params.command.trim()) {
+			throw new TerminalError('Command is empty');
+		}
+
+		if (!isAllowedCommand(params.command)) {
+			throw new TerminalError(`Command not allowed: ${getBaseCommand(params.command)}`);
+		}
 
 		const instance: TerminalInstance = {
 			terminalId,
@@ -104,9 +145,6 @@ export class TerminalManager {
 		return true;
 	}
 
-	/**
-	 * Wait for a terminal to exit and return the exit status.
-	 */
 	async waitForExit(terminalId: string): Promise<{ exitCode: number | null; signal: string | null } | null> {
 		const instance = this.terminals.get(terminalId);
 		if (!instance) {
@@ -118,20 +156,13 @@ export class TerminalManager {
 		}
 
 		return new Promise((resolve) => {
-			const checkInterval = setInterval(() => {
-				const inst = this.terminals.get(terminalId);
-				if (!inst || inst.status !== 'running') {
-					clearInterval(checkInterval);
-					resolve(inst ? { exitCode: inst.exitCode, signal: inst.signal } : null);
-				}
-			}, 100);
-
-			// Timeout after specified duration
-			setTimeout(() => {
-				clearInterval(checkInterval);
+			const timeout = setTimeout(() => {
+				this.exitWaiters.delete(terminalId);
 				this.kill(terminalId);
 				resolve({ exitCode: null, signal: 'SIGTERM' });
 			}, this.timeoutMs);
+
+			this.exitWaiters.set(terminalId, { resolve, timeout });
 		});
 	}
 
@@ -153,6 +184,11 @@ export class TerminalManager {
 	 * Clean up all terminals.
 	 */
 	dispose(): void {
+		for (const [, waiter] of this.exitWaiters) {
+			clearTimeout(waiter.timeout);
+		}
+		this.exitWaiters.clear();
+
 		for (const [terminalId] of this.terminals) {
 			this.kill(terminalId);
 		}
@@ -171,11 +207,12 @@ export class TerminalManager {
 		if (!instance) return;
 
 		try {
+			const useShell = /\.(cmd|bat)$/i.test(command);
 			const proc = spawn(command, args, {
 				cwd,
 				stdio: ['pipe', 'pipe', 'pipe'],
 				windowsHide: true,
-				shell: true,
+				shell: useShell,
 				env: env ? { ...process.env, ...env } : undefined,
 			});
 
@@ -194,12 +231,18 @@ export class TerminalManager {
 				instance.output = (instance.output + text).slice(-this.maxOutputBytes);
 			});
 
-			// Handle process exit
 			proc.on('exit', (code, signal) => {
 				instance.status = 'exited';
 				instance.exitCode = code;
 				instance.signal = signal;
 				this.processes.delete(terminalId);
+
+				const waiter = this.exitWaiters.get(terminalId);
+				if (waiter) {
+					clearTimeout(waiter.timeout);
+					this.exitWaiters.delete(terminalId);
+					waiter.resolve({ exitCode: code, signal });
+				}
 			});
 
 			// Handle process error
@@ -208,6 +251,13 @@ export class TerminalManager {
 				instance.output += `\nError: ${err.message}`;
 				instance.exitCode = 1;
 				this.processes.delete(terminalId);
+
+				const waiter = this.exitWaiters.get(terminalId);
+				if (waiter) {
+					clearTimeout(waiter.timeout);
+					this.exitWaiters.delete(terminalId);
+					waiter.resolve({ exitCode: 1, signal: null });
+				}
 			});
 
 			// Set timeout

@@ -124,8 +124,14 @@ Legend: ✅ supported / 🟡 partially supported / ❌ not supported.
 | Sync Rules | Map tool call results to vault notes (tool → folder → filename template) | — |
 | MCP Servers | Local stdio MCP server definitions (name → command → args) passed to new OpenCode sessions | — |
 | Language | UI language (`en` / `zh`) | `en` |
-| Auto Connect | Connect to OpenCode from Copsilot user actions, not during Obsidian startup | `false` |
+| Auto Scroll | Keep the chat pinned to new streaming output until the user scrolls away | `true` |
+| Auto Connect | Stored setting for connection behavior; the current view opens a connection when Copsilot is opened | `false` |
+| File System Capability | Controls ACP file delegate access: `enabled` / `readonly` / `disabled` | `enabled` |
+| Terminal Capability | Controls ACP terminal delegate access: `enabled` / `disabled` | `enabled` |
+| Terminal Timeout | Maximum terminal wait time before the spawned command is terminated (ms) | `30000` |
+| Terminal Max Output | Maximum terminal output retained per terminal (bytes) | `100000` |
 | Idle Timeout | Maximum time (ms) to wait for agent response before timeout | `300000` |
+| Diagnostics | Settings panel check for CLI path, connection, runtime metadata, MCP config, and sync folder | — |
 
 Runtime agents, models, and available commands/skills load from an existing OpenCode connection or after an explicit reconnect. Opening Settings does not start OpenCode or create a metadata session.
 
@@ -181,17 +187,34 @@ Sessions are stored in Obsidian's plugin data. If sessions disappear after resta
 ```
 src/
 ├── main.ts                      # Plugin entry point, lifecycle, unified storage
-├── settings.ts                  # Settings tab with connection, agent, sync rule config
+├── settings.ts                  # Settings tab: connection, diagnostics, agent, sync, MCP, capability config
 ├── types.ts                     # Shared type definitions and defaults
 │
 ├── client/                      # OpenCode Agent client layer
-│   ├── acp.ts                   # Agent Client Protocol (JSON-RPC) transport
-│   ├── agent.ts                 # Agent runtime: session management, streaming, permissions
+│   ├── acp.ts                   # ACP facade: sessions, prompts, permissions, capabilities, reconnect
+│   ├── AcpJsonRpcTransport.ts   # JSON-RPC request/notification transport
+│   ├── AcpSubprocess.ts         # Local OpenCode subprocess lifecycle
+│   ├── agent.ts                 # Runtime wrapper: idle timeout and permission policy
+│   ├── fsDelegate.ts            # Vault-bounded ACP fs/read_text_file and fs/write_text_file delegate
+│   ├── terminalManager.ts       # ACP terminal create/output/kill/wait/release delegate
+│   ├── sessionUpdateNormalizer.ts # Converts ACP updates into UI-friendly normalized events
 │   └── index.ts                 # Module exports
 │
 ├── view/                        # Sidebar chat view
-│   ├── copsilotView.ts         # Main view component: session tabs, input, message list
-│   └── renderer.ts              # Message rendering: markdown, tool calls, thinking blocks
+│   ├── copsilotView.ts          # Obsidian ItemView: DOM composition, input, drag/drop, keybindings
+│   ├── copsilotViewController.ts # Connection/session/send orchestration and UI state transitions
+│   ├── renderer.ts              # Message rendering: markdown, tool calls, thinking blocks
+│   ├── permissionBanner.ts      # Safe-mode permission prompts
+│   ├── inlineEditPanel.ts       # Selection edit preview and apply UI
+│   ├── sessionDropdown.ts       # Session switch/delete UI
+│   └── welcomeView.ts           # Empty-state and capability-aware status UI
+│
+├── chat/                        # Chat input, toolbar, state, sessions, stream handling
+│   ├── input.ts                 # Prompt input, send/stop, mention and slash triggers
+│   ├── toolbar.ts               # Model/mode/effort/permission toolbar and usage meter
+│   ├── chatState.ts             # Mutable chat view state
+│   ├── session.ts               # Serialized session store backed by plugin data
+│   └── streamController.ts      # Applies normalized stream updates, persistence, and sync hooks
 │
 ├── context/                     # Vault context management
 │   ├── mention.ts               # @mention note picker and resolution
@@ -202,7 +225,8 @@ src/
 │   ├── engine.ts                # Execute sync rules, write tool results as notes
 │   └── templates.ts             # Filename template rendering ({{tool}}, {{date}}, {{shortId}})
 │
-├── commands/                    # Slash command definitions
+├── commands/                    # Slash command parsing and display helpers
+├── agents/                      # Custom agent/skill prompt assembly
 ├── i18n/                        # Internationalization (EN/ZH locale dictionaries)
 └── utils/                       # Cross-cutting utilities (vault path, etc.)
 ```
@@ -362,10 +386,16 @@ Licensed under the [MIT License](LICENSE).
 | 每会话最大消息数 | 超出后截断 | `200` |
 | 会话保留天数 | 超出天数的空会话将被清除 | `30` |
 | 同步规则 | 将工具调用结果映射为 Vault 笔记（工具 → 文件夹 → 文件名模板） | — |
-| MCP 服务器 | 本地 stdio MCP 服务器定义（名称 → 命令 → 参数），用于新建 OpenCode 会话 | — |
+| MCP 服务器 | 本地 stdio/http/sse MCP 服务器定义，用于新建 OpenCode 会话 | — |
 | 界面语言 | UI 语言（`en` / `zh`） | `en` |
-| 自动连接 | 在 Copsilot 用户操作时连接 OpenCode，而非 Obsidian 启动时 | `false` |
+| 自动滚动 | 流式输出时保持滚动到底部，用户手动上滑后暂停 | `true` |
+| 自动连接 | 已保存的连接行为设置；当前打开 Copsilot 视图时会建立连接 | `false` |
+| 文件系统能力 | 控制 ACP 文件委托访问：`enabled` / `readonly` / `disabled` | `enabled` |
+| 终端能力 | 控制 ACP 终端委托访问：`enabled` / `disabled` | `enabled` |
+| 终端超时 | 等待终端命令完成的最长时间，超时后终止（毫秒） | `30000` |
+| 终端最大输出 | 每个终端保留的最大输出字节数 | `100000` |
 | 空闲超时 | 等待 Agent 响应的最大时间（毫秒） | `300000` |
+| 诊断工具 | 设置页中检查 CLI 路径、连接、运行时元数据、MCP 配置和同步文件夹 | — |
 
 运行时 Agent、模型和可用命令/技能从已有的 OpenCode 连接中加载，或在手动重连后加载。打开设置页不会启动 OpenCode 或创建元数据会话。
 
@@ -421,17 +451,34 @@ Licensed under the [MIT License](LICENSE).
 ```
 src/
 ├── main.ts                      # 插件入口、生命周期管理、统一存储
-├── settings.ts                  # 设置面板：连接、Agent、同步规则配置
+├── settings.ts                  # 设置面板：连接、诊断、Agent、同步、MCP、能力配置
 ├── types.ts                     # 共享类型定义和默认值
 │
 ├── client/                      # OpenCode Agent 客户端层
-│   ├── acp.ts                   # Agent Client Protocol (JSON-RPC) 通信
-│   ├── agent.ts                 # Agent 运行时：会话管理、流式响应、权限控制
+│   ├── acp.ts                   # ACP 门面：会话、提示词、权限、能力协商、重连
+│   ├── AcpJsonRpcTransport.ts   # JSON-RPC 请求/通知传输
+│   ├── AcpSubprocess.ts         # 本地 OpenCode 子进程生命周期
+│   ├── agent.ts                 # 运行时包装：空闲超时和权限策略
+│   ├── fsDelegate.ts            # 限定在 Vault 内的 ACP 文件读写委托
+│   ├── terminalManager.ts       # ACP 终端创建、输出、终止、等待、释放委托
+│   ├── sessionUpdateNormalizer.ts # 将 ACP 更新转换为 UI 友好的标准事件
 │   └── index.ts                 # 模块导出
 │
 ├── view/                        # 侧边栏对话视图
-│   ├── copsilotView.ts         # 主视图组件：会话标签、输入框、消息列表
-│   └── renderer.ts              # 消息渲染：Markdown、工具调用、思考块
+│   ├── copsilotView.ts          # Obsidian ItemView：DOM 组合、输入、拖拽、快捷键
+│   ├── copsilotViewController.ts # 连接、会话、发送流程和 UI 状态编排
+│   ├── renderer.ts              # 消息渲染：Markdown、工具调用、思考块
+│   ├── permissionBanner.ts      # safe 模式权限确认 UI
+│   ├── inlineEditPanel.ts       # 选区编辑预览和应用 UI
+│   ├── sessionDropdown.ts       # 会话切换和删除 UI
+│   └── welcomeView.ts           # 空状态和能力感知状态 UI
+│
+├── chat/                        # 对话输入、工具栏、状态、会话、流处理
+│   ├── input.ts                 # 提示词输入、发送/停止、@ 和 / 触发
+│   ├── toolbar.ts               # 模型、模式、effort、权限工具栏和用量仪表
+│   ├── chatState.ts             # 对话视图可变状态
+│   ├── session.ts               # 基于插件数据的序列化会话存储
+│   └── streamController.ts      # 应用标准化流更新、持久化和同步钩子
 │
 ├── context/                     # Vault 上下文管理
 │   ├── mention.ts               # @提及笔记选择器和解析
@@ -442,7 +489,8 @@ src/
 │   ├── engine.ts                # 执行同步规则，将工具结果写入笔记
 │   └── templates.ts             # 文件名模板渲染（{{tool}}、{{date}}、{{shortId}}）
 │
-├── commands/                    # 斜杠命令定义
+├── commands/                    # 斜杠命令解析和显示辅助
+├── agents/                      # 自定义 Agent/技能提示词组装
 ├── i18n/                        # 国际化（中英双语词典）
 └── utils/                       # 通用工具函数（Vault 路径等）
 ```
