@@ -106,13 +106,22 @@ export class InputToolbar {
     this.modeCycleEl.classList.toggle('has-options', options.length > 1);
   }
 
-  private cycleMode(): void {
+  cycleMode(): void {
     if (this.modeOptions.length <= 1) return;
     const idx = this.modeOptions.findIndex(o => o.value === this.currentMode);
     const next = this.modeOptions[(idx + 1) % this.modeOptions.length];
     this.currentMode = next.value;
     this.modeCycleLabelEl.setText(next.label);
     this.callbacks.onAgentChange?.(next.value);
+  }
+
+  cycleModeReverse(): void {
+    if (this.modeOptions.length <= 1) return;
+    const idx = this.modeOptions.findIndex(o => o.value === this.currentMode);
+    const prev = this.modeOptions[(idx - 1 + this.modeOptions.length) % this.modeOptions.length];
+    this.currentMode = prev.value;
+    this.modeCycleLabelEl.setText(prev.label);
+    this.callbacks.onAgentChange?.(prev.value);
   }
 
   // ── Model custom dropdown ──

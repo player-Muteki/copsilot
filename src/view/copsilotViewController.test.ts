@@ -243,19 +243,34 @@ describe('CopsilotViewController', () => {
 	});
 
 	describe('send', () => {
-		it('does nothing when busy', async () => {
-			// Make the controller busy by sending
+		it('reuses existing session for subsequent sends', async () => {
 			const client = createMockClient();
 			(deps.plugin.getClient as ReturnType<typeof vi.fn>).mockReturnValue(client);
 			(deps.plugin.initClient as ReturnType<typeof vi.fn>).mockResolvedValue(true);
 
-			// First send makes it busy
 			await controller.send('first', []);
-			// Second send should be ignored
 			await controller.send('second', []);
 
-			// createSession called once (from ensureRuntimeSession)
+			// createSession called once (first send), second reuses it
 			expect(client.createSession).toHaveBeenCalledTimes(1);
+		});
+
+		it('queues prompt when busy', async () => {
+			const client = createMockClient();
+			(deps.plugin.getClient as ReturnType<typeof vi.fn>).mockReturnValue(client);
+
+			// Manually set busy
+			Reflect.set(controller, 'busy', true);
+
+			await controller.send('queued-msg', []);
+
+			const queue = Reflect.get(controller, 'promptQueue') as Array<{ text: string }>;
+			expect(queue).toHaveLength(1);
+			expect(queue[0].text).toBe('queued-msg');
+
+			// No session operations when queued
+			expect(client.createSession).not.toHaveBeenCalled();
+			expect(client.sendMessage).not.toHaveBeenCalled();
 		});
 
 		it('sends message and processes response', async () => {
@@ -428,6 +443,7 @@ describe('CopsilotViewController', () => {
 		it('resets all state and calls callbacks', () => {
 			controller.state.isStreaming = true;
 			controller.state.usage = { totalTokens: 100, inputTokens: 50, outputTokens: 50 };
+			Reflect.get(controller, 'promptQueue').push({ text: 'pending', refs: [] });
 
 			controller.resetConversationView();
 
@@ -437,6 +453,7 @@ describe('CopsilotViewController', () => {
 			expect(callbacks.onClearUI).toHaveBeenCalled();
 			expect(callbacks.onClearChips).toHaveBeenCalled();
 			expect(callbacks.onClearPendingImageChips).toHaveBeenCalled();
+			expect(Reflect.get(controller, 'promptQueue')).toHaveLength(0);
 		});
 	});
 

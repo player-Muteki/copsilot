@@ -4,15 +4,15 @@
 ![GitHub release](https://img.shields.io/github/v/release/player-Muteki/copsilot)
 ![License](https://img.shields.io/github/license/player-Muteki/copsilot)
 
-> Beta — currently in public testing.
+> Beta. Currently in public testing.
 
 > English | [中文](#中文)
 
-An Obsidian plugin that embeds the complete [OpenCode](https://opencode.ai) AI Agent in your vault. Your notes become the agent's context — ask, summarize, organize, and create content without ever leaving Obsidian.
+An Obsidian plugin that embeds the complete [OpenCode](https://opencode.ai) AI Agent in your vault. Your notes become the agent's context. Ask questions, summarize notes, or create new content without ever leaving Obsidian.
 
 ## Why Copsilot
 
-Existing AI plugins for Obsidian fall into two categories: those that require third-party API keys (incurring ongoing token costs) and those that rely on middleware layers (increasing token consumption). Copsilot connects directly to your local OpenCode CLI, which provides free token quotas sufficient for most note-taking users. No API keys, no middlemen — just direct, lightweight Agent access.
+Most Obsidian AI plugins need either third-party API keys (ongoing token costs) or middleware layers (extra token consumption). Copsilot connects directly to your local OpenCode CLI, which provides free token quotas sufficient for most note-taking users. No API keys, no middlemen. Direct Agent access with free token quotas.
 
 ## Features
 
@@ -144,6 +144,8 @@ Runtime agents, models, and available commands/skills load from an existing Open
 | `Ctrl/Cmd + Shift + C` | Copy last assistant message |
 | `Enter` | Send message |
 | `Escape` | Stop generation |
+| `Tab` | Cycle to next agent mode |
+| `Shift + Tab` | Cycle to previous agent mode |
 | `@` | Reference a vault note |
 | `/` | Slash commands |
 
@@ -243,7 +245,7 @@ src/
 - [x] MCP server support
 - [x] Custom agents and skills
 - [x] i18n (internationalization)
-- [ ] More to come!
+- [ ] More planned.
 
 ## License
 
@@ -270,13 +272,13 @@ Licensed under the [MIT License](LICENSE).
 
 > [English](#copsilot) | 中文
 
-> Beta — 目前处于公开测试阶段。
+> Beta，目前处于公开测试阶段。
 
 将完整的 [OpenCode](https://opencode.ai) AI Agent 嵌入 Obsidian 侧边栏。你的笔记就是 Agent 的上下文——在笔记中直接提问、总结、整理和创作。
 
 ## 为什么做 Copsilot
 
-现有的 Obsidian AI 插件大致分两类：需要自行配置第三方 API Key（长期产生 Token 费用）或依赖中间层中转（增加 Token 消耗）。Copsilot 直连本地 OpenCode CLI，而 OpenCode 本身提供免费 Token 额度，对绝大多数笔记用户完全够用。无需 API Key，无需中间层——直接、轻量、零成本。
+现有的 Obsidian AI 插件大致分两类：需要自行配置第三方 API Key（长期产生 Token 费用）或依赖中间层中转（增加 Token 消耗）。Copsilot 直连本地 OpenCode CLI，而 OpenCode 本身提供免费 Token 额度，对绝大多数笔记用户完全够用。无需 API Key，也无需中间层。直接使用，轻量，零成本。
 
 ## 功能特性
 
@@ -408,6 +410,8 @@ Licensed under the [MIT License](LICENSE).
 | `Ctrl/Cmd + Shift + C` | 复制最后一条助手消息 |
 | `Enter` | 发送消息 |
 | `Escape` | 停止生成 |
+| `Tab` | 切换到下一个 Agent 模式 |
+| `Shift + Tab` | 切换到上一个 Agent 模式 |
 | `@` | 引用 Vault 笔记 |
 | `/` | 斜杠命令 |
 
@@ -507,7 +511,7 @@ src/
 - [x] MCP 服务器支持
 - [x] 自定义 Agent 和技能
 - [x] 国际化（i18n）
-- [ ] 更多功能持续开发中！
+- [ ] 更多功能规划中
 
 ## 许可证
 

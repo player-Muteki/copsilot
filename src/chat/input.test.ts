@@ -53,15 +53,12 @@ describe('ChatInput', () => {
 		expect(callbacks.onStop).toHaveBeenCalled();
 	});
 
-	it('setStreaming sets streaming state and disables textarea', () => {
+	it('setStreaming tracks streaming state', () => {
 		chatInput.setStreaming(true);
 		expect(chatInput.isStreaming()).toBe(true);
-		const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
-		expect(textarea.disabled).toBe(true);
 
 		chatInput.setStreaming(false);
 		expect(chatInput.isStreaming()).toBe(false);
-		expect(textarea.disabled).toBe(false);
 	});
 
 	it('setDisabled disables textarea', () => {
@@ -89,6 +86,24 @@ describe('ChatInput', () => {
 	});
 
 	describe('keydown events', () => {
+		it('Tab cycles mode forward', () => {
+			const onCycleMode = vi.fn();
+			callbacks.onCycleMode = onCycleMode;
+			const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+			const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: false });
+			textarea.dispatchEvent(event);
+			expect(onCycleMode).toHaveBeenCalledWith(1);
+		});
+
+		it('Shift+Tab cycles mode backward', () => {
+			const onCycleMode = vi.fn();
+			callbacks.onCycleMode = onCycleMode;
+			const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+			const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true });
+			textarea.dispatchEvent(event);
+			expect(onCycleMode).toHaveBeenCalledWith(-1);
+		});
+
 		it('Enter sends message', () => {
 			const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
 			textarea.value = 'Test message';

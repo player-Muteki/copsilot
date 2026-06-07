@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { setLocale } from '../i18n/index';
 import { InputToolbar } from './toolbar';
 import { installObsidianDomHelpers } from '../test/domHelpers';
@@ -26,5 +26,59 @@ describe('InputToolbar locale refresh', () => {
     expect(container.querySelector('.copsilot-effort-label')?.textContent).toBe('默认');
     expect(container.querySelector('.copsilot-effort-option')?.textContent).toBe('默认');
     expect(container.querySelector('.copsilot-send-btn')?.textContent).toBe('停止');
+  });
+});
+
+describe('InputToolbar cycle mode', () => {
+  it('cycleMode advances to next agent and wraps around', () => {
+    const container = document.createElement('div') as HTMLDivElement;
+    const onAgentChange = vi.fn();
+    const toolbar = new InputToolbar(container, { onAgentChange });
+
+    toolbar.updateAgents([
+      { value: 'build', label: 'Build' },
+      { value: 'ask', label: 'Ask' },
+    ], 'build');
+
+    toolbar.cycleMode();
+    expect(onAgentChange).toHaveBeenCalledWith('ask');
+    expect(container.querySelector('.copsilot-mode-cycle-label')?.textContent).toBe('Ask');
+
+    toolbar.cycleMode();
+    expect(onAgentChange).toHaveBeenCalledWith('build');
+    expect(container.querySelector('.copsilot-mode-cycle-label')?.textContent).toBe('Build');
+  });
+
+  it('cycleModeReverse goes to previous agent and wraps around', () => {
+    const container = document.createElement('div') as HTMLDivElement;
+    const onAgentChange = vi.fn();
+    const toolbar = new InputToolbar(container, { onAgentChange });
+
+    toolbar.updateAgents([
+      { value: 'build', label: 'Build' },
+      { value: 'ask', label: 'Ask' },
+    ], 'build');
+
+    toolbar.cycleModeReverse();
+    expect(onAgentChange).toHaveBeenCalledWith('ask');
+
+    toolbar.cycleModeReverse();
+    expect(onAgentChange).toHaveBeenCalledWith('build');
+  });
+
+  it('does not cycle with single agent', () => {
+    const container = document.createElement('div') as HTMLDivElement;
+    const onAgentChange = vi.fn();
+    const toolbar = new InputToolbar(container, { onAgentChange });
+
+    toolbar.updateAgents([
+      { value: 'build', label: 'Build' },
+    ], 'build');
+
+    toolbar.cycleMode();
+    expect(onAgentChange).not.toHaveBeenCalled();
+
+    toolbar.cycleModeReverse();
+    expect(onAgentChange).not.toHaveBeenCalled();
   });
 });

@@ -57,6 +57,8 @@ export class CopsilotViewController {
 	private streamCtrl!: StreamController;
 	private busy = false;
 	private sendStartTime = 0;
+	private genId = 0;
+	private promptQueue: Array<{ text: string; refs: ContextRef[] }> = [];
 
 	constructor(
 		private deps: ControllerDeps,
@@ -148,6 +150,7 @@ export class CopsilotViewController {
 				}
 				this.loadToolbarOptions();
 				if (this.busy) {
+					++this.genId;
 					this.busy = false;
 					this.state.isStreaming = false;
 					this.deps.input.setStreaming(false);
@@ -169,6 +172,7 @@ export class CopsilotViewController {
 		this.deps.permissionBanner.dismiss();
 		this.deps.renderer.removeAssistantPlaceholder();
 		this.streamCtrl.reset();
+		++this.genId;
 		this.busy = false;
 		this.state.isStreaming = false;
 		this.state.usage = null;
@@ -354,13 +358,17 @@ export class CopsilotViewController {
 	// ── Sending ──
 
 	async send(text: string, refs: ContextRef[]): Promise<void> {
-		if (this.busy) return;
+		if (this.busy) {
+			this.promptQueue.push({ text, refs });
+			return;
+		}
 		const sessionId = await this.ensureRuntimeSession();
 		const c = this.deps.plugin.getClient();
 		if (!c || !sessionId) return;
 		const inlineEdit = this.deps.inlineEditPanel.pendingState;
 		if (!inlineEdit) this.deps.inlineEditPanel.clearState();
 
+		const currentGen = ++this.genId;
 		this.callbacks.onHideWelcome();
 
 		this.busy = true;
@@ -419,6 +427,7 @@ export class CopsilotViewController {
 				}
 			}
 		} finally {
+			if (this.genId !== currentGen) return;
 			this.deps.renderer.removeAssistantPlaceholder();
 			this.busy = false;
 			this.state.isStreaming = false;
@@ -442,12 +451,21 @@ export class CopsilotViewController {
 				}
 				this.deps.inlineEditPanel.pendingState = null;
 			}
+			this.drainQueue();
+		}
+	}
+
+	private async drainQueue(): Promise<void> {
+		while (this.promptQueue.length > 0 && !this.busy) {
+			const next = this.promptQueue.shift()!;
+			await this.send(next.text, next.refs);
 		}
 	}
 
 	async stopGeneration(): Promise<void> {
 		const c = this.deps.plugin.getClient();
 		if (!c || !this.state.sessionId || (!this.busy && !this.state.isStreaming)) return;
+		++this.genId;
 		this.busy = false;
 		this.state.isStreaming = false;
 		this.deps.input.setStreaming(false);
@@ -459,6 +477,7 @@ export class CopsilotViewController {
 		} catch (e) {
 			console.error('[copsilot] abort:', e);
 		}
+		await this.drainQueue();
 	}
 
 	async buildParts(text: string, refs: ContextRef[]): Promise<PromptPart[]> {
@@ -592,6 +611,8 @@ export class CopsilotViewController {
 		this.deps.welcomeView.hide();
 		this.deps.renderer.clear();
 		this.streamCtrl.reset();
+		++this.genId;
+		this.promptQueue = [];
 		this.busy = false;
 		this.state.isStreaming = false;
 		this.state.usage = null;

@@ -4,6 +4,7 @@ import { t, onLocaleChange } from '../i18n/index';
 export interface InputCallbacks {
   onSend: (text: string, refs?: ContextRef[]) => void;
   onStop: () => void;
+  onCycleMode?: (direction: 1 | -1) => void;
   onToggleMention: () => void;
   onToggleSlash: () => void;
   onAddRef: (ref: ContextRef) => void;
@@ -29,6 +30,8 @@ export class ChatInput {
 
     this.textarea.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Escape' && this.streaming) { e.preventDefault(); this.callbacks.onStop(); return; }
+      if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); this.callbacks.onCycleMode?.(1); return; }
+      if (e.key === 'Tab' && e.shiftKey) { e.preventDefault(); this.callbacks.onCycleMode?.(-1); return; }
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.send(); return; }
       if (e.key === '@' && this.isAtWordBoundary()) { e.preventDefault(); this.callbacks.onToggleMention(); return; }
       if (e.key === '/' && this.isAtWordBoundary()) { e.preventDefault(); this.callbacks.onToggleSlash(); return; }
@@ -63,7 +66,6 @@ export class ChatInput {
 
   setStreaming(on: boolean): void {
     this.streaming = on;
-    this.textarea.disabled = on;
   }
 
   setDisabled(on: boolean): void {

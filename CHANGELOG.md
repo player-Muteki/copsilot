@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.1.1 - 2026-06-07
+
+### Security
+- Add ALLOWED_COMMANDS whitelist to TerminalManager to prevent arbitrary command execution.
+- Remove unconditional shell:true (only .cmd/.bat use shell on Windows).
+- Terminate terminal processes on ACP disconnect.
+- Show MCP environment variable security warning in settings UI.
+
+### Features
+- Prompt input is always usable during streaming. Messages typed while the agent is responding are queued and sent automatically when the current turn finishes.
+- Tab / Shift+Tab cycles agent modes forward and backward.
+- Stop button interrupts the current response and drains queued prompts.
+
+### Refactoring
+- Extract AcpRequestHandler from AcpClient (FS, terminal, and permission request logic). AcpClient reduced from ~920 to ~690 lines.
+- Replace setInterval polling in TerminalManager.waitForExit with process exit event.
+- Add genId guard to prevent stale finally blocks from corrupting state during stop+drain.
+
+### Fixed
+- closeSession no longer silently swallows errors.
+- Add session race condition guard in send() after syncRuntimeSession.
+- Send errors now correctly set streaming state to false.
+
 ## 0.1.0 - 2026-05-31
 
 First public beta release.

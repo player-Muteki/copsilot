@@ -154,6 +154,10 @@ export class CopsilotView extends ItemView {
 		this.input = new ChatInput(this.inputAreaEl, {
 			onSend: (text: string) => this.send(text),
 			onStop: () => this.stopGeneration(),
+			onCycleMode: (direction) => {
+				if (direction === 1) this.toolbar.cycleMode();
+				else this.toolbar.cycleModeReverse();
+			},
 			onToggleMention: () => this.showAC('@'),
 			onToggleSlash: () => this.showAC('/'),
 			onAddRef: (ref: ContextRef) => this.addChip(ref, 'manual'),
