@@ -366,7 +366,7 @@ export class CopsilotViewController {
 		const c = this.deps.plugin.getClient();
 		if (!c || !sessionId) return;
 		const inlineEdit = this.deps.inlineEditPanel.pendingState;
-		if (!inlineEdit) this.deps.inlineEditPanel.clearState();
+		if (inlineEdit) this.deps.inlineEditPanel.clearState();
 
 		const currentGen = ++this.genId;
 		this.callbacks.onHideWelcome();
@@ -470,14 +470,12 @@ export class CopsilotViewController {
 		this.state.isStreaming = false;
 		this.deps.input.setStreaming(false);
 		this.deps.toolbar.setSending(false);
+		this.promptQueue.length = 0;
 		try {
-			// Only abort the current request, don't send cancel to server
-			// The abort signal will handle the cancellation
 			c.abort();
 		} catch (e) {
 			console.error('[copsilot] abort:', e);
 		}
-		await this.drainQueue();
 	}
 
 	async buildParts(text: string, refs: ContextRef[]): Promise<PromptPart[]> {

@@ -75,8 +75,12 @@ export class AcpSubprocess {
       } catch {
         onDone();
       }
-      timeout = setTimeout(onDone, SIGKILL_TIMEOUT_MS);
+      timeout = setTimeout(() => {
+        if (!done) proc.kill('SIGKILL');
+        onDone();
+      }, SIGKILL_TIMEOUT_MS);
     });
+    this.closed = true;
     this.proc = null;
   }
   private notifyClose(error?: Error): void {

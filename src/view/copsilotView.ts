@@ -113,7 +113,8 @@ export class CopsilotView extends ItemView {
 		svg.appendChild(track);
 		const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
 		const clipPath = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
-		clipPath.setAttribute('id', 'arc-clip');
+		const arcClipId = `arc-clip-${Math.random().toString(36).slice(2)}`;
+		clipPath.setAttribute('id', arcClipId);
 		const clipRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
 		clipRect.setAttribute('y', '20');
 		clipRect.setAttribute('width', '40');
@@ -127,7 +128,7 @@ export class CopsilotView extends ItemView {
 		this.meterArcFill.setAttribute('r', String(R));
 		this.meterArcFill.setAttribute('class', 'copsilot-arc-fill');
 		this.meterArcFill.setAttribute('stroke-dasharray', `0 ${ARC_LEN}`);
-		this.meterArcFill.setAttribute('clip-path', 'url(#arc-clip)');
+		this.meterArcFill.setAttribute('clip-path', `url(#${arcClipId})`);
 		svg.appendChild(this.meterArcFill);
 		this.meterEl.appendChild(svg);
 		this.meterPctEl = this.meterEl.createSpan({ cls: 'copsilot-arc-pct' });
@@ -338,13 +339,13 @@ export class CopsilotView extends ItemView {
 		this.dragDropManager.setup();
 	}
 
-	override onClose(): Promise<void> {
+	override async onClose(): Promise<void> {
+		await this.controller?.stopGeneration();
 		this.closeSessionDropdown();
 		this.closeAutocomplete();
 		this.keybindingMgr?.unregister();
 		this.unregisterEventListeners();
 		this.contextChipsEl?.remove();
-		return Promise.resolve();
 	}
 
 	private unregisterEventListeners(): void {

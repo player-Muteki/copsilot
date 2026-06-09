@@ -195,7 +195,7 @@ export class ChatRenderer {
     this.scrollToBottom();
   }
 
-  addToolCall(id: string, title: string, kind: string, input: Record<string, unknown> | undefined): void {
+  addToolCall(id: string, title: string, kind: string, input: Record<string, unknown> | undefined, locations?: { path: string }[]): void {
     const wrap = this.container.createDiv({ cls: 'copsilot-msg assistant' });
     const box = wrap.createDiv({ cls: 'copsilot-tool-call' });
     box.dataset.toolId = id;
@@ -203,8 +203,8 @@ export class ChatRenderer {
     const hdr = box.createDiv({ cls: 'copsilot-tool-call-header' });
     hdr.createSpan({ text: kind || 'tool', cls: 'tc-kind' });
 
-    const filePath = (input?.filePath ?? input?.path ?? title) as string;
-    const fileName = filePath.split('/').pop() ?? filePath;
+    const rawPath = (locations?.[0]?.path ?? input?.file_path ?? input?.filePath ?? input?.path ?? title) as string;
+    const fileName = rawPath.split(/[\\/]/).pop() ?? rawPath;
     hdr.createSpan({ text: fileName, cls: 'tc-file' });
 
     hdr.createSpan({ text: '…', cls: 'tc-stat' });

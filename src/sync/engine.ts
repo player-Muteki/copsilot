@@ -1,4 +1,5 @@
-import type { Vault, TFile } from 'obsidian';
+import type { Vault } from 'obsidian';
+import { TFile } from 'obsidian';
 import type { SyncRule } from '../types';
 import { ruleMatches, buildSyncNote } from './templates';
 import { Mutex } from '../utils/mutex';
@@ -14,7 +15,12 @@ export class SyncEngine {
   constructor(private vault: Vault, private rules: SyncRule[]) {}
 
   private isTFile(file: unknown): file is TFile {
-    return file instanceof Object && 'vault' in file && 'extension' in file;
+    return file instanceof TFile;
+  }
+
+  private isSafePath(p: string): boolean {
+    const normalized = p.replace(/\\/g, '/');
+    return !normalized.startsWith('/') && !/(^|\/)\.\.($|\/)/.test(normalized);
   }
 
   async process(ctx: import('./templates').SyncContext): Promise<SyncFailure[]> {
@@ -24,6 +30,10 @@ export class SyncEngine {
         if (!ruleMatches(rule, ctx)) continue;
         try {
           const note = buildSyncNote(ctx, rule.folder, rule.filenameTemplate, rule.template);
+          if (!this.isSafePath(note.path)) {
+            failures.push({ rule, error: new Error(`Unsafe sync path: ${note.path}`) });
+            continue;
+          }
           await this.ensureFolder(rule.folder);
           const existing = this.vault.getAbstractFileByPath(note.path);
           if (existing && this.isTFile(existing)) {

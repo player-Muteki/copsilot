@@ -48,7 +48,7 @@ export class StreamController {
 			}
 			case 'tool_call_snapshot': {
 				if (ch.status === 'pending') {
-					renderer.addToolCall(ch.toolCallId, ch.title, ch.toolKind, ch.rawInput);
+					renderer.addToolCall(ch.toolCallId, ch.title, ch.toolKind, ch.rawInput, ch.locations);
 				} else {
 					renderer.updateToolCall(ch.toolCallId, ch.status, ch.rawOutput, ch.contents);
 				}

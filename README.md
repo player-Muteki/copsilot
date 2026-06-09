@@ -30,7 +30,7 @@ Most Obsidian AI plugins need either third-party API keys (ongoing token costs) 
 
 **Custom Agents & Skills** — Define local agent profiles and reusable skill instructions in Settings, then inject them into new chat prompts.
 
-**Streaming Response Rendering** — Real-time rendering of Markdown, thinking blocks, tool calls, and plan panels.
+**Streaming Response Rendering** — Real-time rendering of Markdown, thinking blocks, tool calls (with filename display for read/write/edit operations), and plan panels.
 
 **Sync Engine** — Tool call results (file edits, writes) are automatically written back to Vault notes based on configurable sync rules with filename templates.
 
@@ -296,7 +296,7 @@ Licensed under the [MIT License](LICENSE).
 
 **自定义 Agent 与技能** — 在设置中定义本地 Agent 配置和可复用技能指令，并注入到新的对话提示词中。
 
-**流式响应渲染** — 实时渲染 Markdown、思考块、工具调用和计划面板。
+**流式响应渲染** — 实时渲染 Markdown、思考块、工具调用（读写编辑操作显示具体操作的文件名）和计划面板。
 
 **同步引擎** — 工具调用结果（文件编辑、写入）根据可配置的同步规则和文件名模板，自动写回 Vault 笔记。
 

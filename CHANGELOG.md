@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.2 - 2026-06-09
+
+### Features
+- Tool call blocks now display the filename being operated on (read/write/edit) in the header, extracted from ACP `locations` or `rawInput.file_path`.
+
+### Fixed
+- Windows command injection: `quoteCmdArg` now escapes backslashes before quotes, preventing cmd.exe quote boundary bypass.
+- `AcpSubprocess.shutdown` now sends SIGKILL after timeout (previously only resolved the promise) and sets `closed = true` to prevent spurious close-listener calls.
+- Inverted condition in `copsilotViewController.send()` — `inlineEditPanel.clearState()` was called when there was no pending edit instead of when there was one.
+- `stopGeneration` now clears the prompt queue before aborting, preventing queued messages from resuming after the user requests a stop.
+- `onClose` now awaits `stopGeneration()` to cancel in-flight generation and prevent post-destroy DOM/timer writes.
+- SVG arc-meter clip-path ID is now unique per view instance, fixing clipping when multiple Copsilot leaves are open simultaneously.
+- `SyncEngine.isTFile` uses `instanceof TFile` instead of duck-type property checks.
+- Sync engine validates that resolved note paths do not contain path traversal sequences before writing.
+
 ## 0.1.1 - 2026-06-07
 
 ### Security

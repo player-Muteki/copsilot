@@ -24,7 +24,7 @@ import { SessionUpdateNormalizer } from './sessionUpdateNormalizer';
 import type { NormalizedUpdate } from '../types';
 import { AcpRequestHandler } from './AcpRequestHandler';
 
-export const CLIENT_VERSION = '0.1.1';
+export const CLIENT_VERSION = '0.1.2';
 
 export interface AcpSessionMeta {
   availableCommands: AvailableCommand[];
@@ -660,7 +660,7 @@ export class AcpClient implements OpencodeClient {
   private quoteCmdArg(value: string): string {
     if (!value) return '""';
     if (!/[\s"]/g.test(value)) return value;
-    return `"${value.replace(/"/g, '\\"')}"`;
+    return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
   }
 }
 
