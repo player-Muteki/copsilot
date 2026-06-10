@@ -372,7 +372,7 @@ describe('AcpRequestHandler permission handling', () => {
   });
 
   it('uses the current release version for ACP clientInfo', () => {
-	expect(CLIENT_VERSION).toBe('0.1.2');
+	expect(CLIENT_VERSION).toBe('0.1.3');
   });
 });
 

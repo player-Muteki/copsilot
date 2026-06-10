@@ -67,7 +67,7 @@ describe('StreamController', () => {
 
 	it('handles tool_call_snapshot pending', () => {
 		controller.handleChunk({ kind: 'tool_call_snapshot', toolCallId: 'call-1', title: 'Search', toolKind: 'search', status: 'pending', rawInput: { q: 'test' }, contents: [] });
-		expect(deps.renderer.addToolCall).toHaveBeenCalledWith('call-1', 'Search', 'search', { q: 'test' });
+		expect(deps.renderer.addToolCall).toHaveBeenCalledWith('call-1', 'Search', 'search', { q: 'test' }, undefined);
 	});
 
 	it('handles tool_call_snapshot completed and processes syncEngine', async () => {
@@ -77,7 +77,7 @@ describe('StreamController', () => {
 		const content = [{ type: 'content' as const, content: { type: 'text' as const, text: 'Result' } }];
 		controller.handleChunk({ kind: 'tool_call_snapshot', toolCallId: 'call-1', title: 'Search', toolKind: 'search', status: 'completed', rawInput: { q: 'test' }, rawOutput: { res: 'ok' }, contents: content });
 
-		expect(deps.renderer.updateToolCall).toHaveBeenCalledWith('call-1', 'completed', { res: 'ok' }, content);
+		expect(deps.renderer.updateToolCall).toHaveBeenCalledWith('call-1', 'completed', { res: 'ok' }, content, { q: 'test' }, undefined);
 
 		expect(deps.syncEngine.process).toHaveBeenCalledWith({
 			toolCallId: 'call-1',

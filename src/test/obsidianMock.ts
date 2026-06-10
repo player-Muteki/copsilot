@@ -4,6 +4,19 @@ export const MarkdownRenderer = {
   },
 };
 
+export class TAbstractFile {
+  vault!: unknown;
+  path!: string;
+  name!: string;
+  extension!: string;
+  parent!: unknown;
+}
+
+export class TFile extends TAbstractFile {
+  basename!: string;
+  stat!: unknown;
+}
+
 export class Component {}
 
 export class Plugin extends Component {
@@ -45,6 +58,10 @@ export class Notice {
   constructor(public message: string) {
     Notice.messages.push(message);
   }
+}
+
+export function setIcon(_el: HTMLElement, _icon: string): void {
+  // no-op mock
 }
 
 export class Setting {

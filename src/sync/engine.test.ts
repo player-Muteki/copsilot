@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { SyncEngine } from './engine';
 import type { SyncRule } from '../types';
-import type { Vault, TFile, TAbstractFile } from 'obsidian';
+import type { Vault, TAbstractFile } from 'obsidian';
+import { TFile } from 'obsidian';
 
 function createMockVault(): Vault {
   const files = new Map<string, TAbstractFile>();
@@ -35,7 +36,7 @@ describe('SyncEngine', () => {
 
   it('should modify existing note', async () => {
     const vault = createMockVault();
-    const existingFile = { vault, extension: 'md', path: 'sync/write-test.md' } as unknown as TFile;
+    const existingFile = Object.assign(new TFile(), { vault, extension: 'md', path: 'sync/write-test.md' });
     (vault.getAbstractFileByPath as ReturnType<typeof vi.fn>).mockReturnValue(existingFile);
 
     const rule: SyncRule = {

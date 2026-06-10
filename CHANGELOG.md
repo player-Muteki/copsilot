@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.3 - 2026-06-10
+
+### Features
+- Tool call blocks now show icons per tool kind (read/edit/write/execute/glob/grep/search).
+- Tool call headers now display the filename being operated on, extracted from ACP locations or rawInput.
+
+### Fixed
+- `SyncEngine.isTFile` uses `instanceof TFile` instead of duck-type property checks.
+- Add `setIcon` to obsidian mock and fix test expectations for updated `addToolCall`/`updateToolCall` signatures.
+
 ## 0.1.2 - 2026-06-09
 
 ### Features

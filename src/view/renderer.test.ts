@@ -11,6 +11,7 @@ vi.mock('obsidian', () => ({
   MarkdownRenderer: {
     renderMarkdown: vi.fn().mockResolvedValue(undefined),
   },
+  setIcon: vi.fn(),
 }));
 
 describe('ChatRenderer', () => {
@@ -137,7 +138,7 @@ describe('ChatRenderer', () => {
     it('shows kind', () => {
       renderer.addToolCall('call-1', 'Search', 'search', { q: 'test' });
       const kind = container.querySelector('.tc-kind');
-      expect(kind?.textContent).toBe('search');
+      expect(kind?.textContent).toBe('Search');
     });
 
     it('shows file name from input', () => {
