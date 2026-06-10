@@ -1,7 +1,21 @@
 import type { App, Component } from 'obsidian';
-import { MarkdownRenderer } from 'obsidian';
+import { MarkdownRenderer, setIcon } from 'obsidian';
 import { ContextInjection } from '../context/injection';
 import { t, onLocaleChange } from '../i18n/index';
+
+const TOOL_ICONS: Record<string, string> = {
+  read: 'file-text',
+  edit: 'file-pen',
+  write: 'file-plus',
+  execute: 'terminal',
+  search: 'search',
+  think: 'brain',
+  fetch: 'globe',
+  delete: 'trash',
+  move: 'folder-move',
+  switch_mode: 'repeat',
+  other: 'settings',
+};
 
 export interface UsageDisplay {
   totalTokens: number;
@@ -201,10 +215,15 @@ export class ChatRenderer {
     box.dataset.toolId = id;
 
     const hdr = box.createDiv({ cls: 'copsilot-tool-call-header' });
-    hdr.createSpan({ text: kind || 'tool', cls: 'tc-kind' });
 
-    const rawPath = (locations?.[0]?.path ?? input?.file_path ?? input?.filePath ?? input?.path ?? title) as string;
-    const fileName = rawPath.split(/[\\/]/).pop() ?? rawPath;
+    const iconEl = hdr.createSpan({ cls: 'tc-icon' });
+    setIcon(iconEl, TOOL_ICONS[kind] || 'tool');
+
+    const displayKind = kind ? kind.charAt(0).toUpperCase() + kind.slice(1) : 'tool';
+    hdr.createSpan({ text: displayKind, cls: 'tc-kind' });
+
+    const rawPath = (locations?.[0]?.path ?? input?.file_path ?? input?.filePath ?? input?.path ?? '') as string;
+    const fileName = rawPath ? (rawPath.split(/[\\/]/).pop() ?? rawPath) : '';
     hdr.createSpan({ text: fileName, cls: 'tc-file' });
 
     hdr.createSpan({ text: '…', cls: 'tc-stat' });
@@ -222,11 +241,25 @@ export class ChatRenderer {
     status: string,
     _rawOutput?: Record<string, unknown>,
     content?: Array<{ type: string; content?: { type: string; text?: string }; path?: string; oldText?: string; newText?: string }>,
+    rawInput?: Record<string, unknown>,
+    locations?: { path: string }[],
   ): void {
     const box = this.toolEls.get(id);
     if (!box) return;
     const hdr = box.querySelector('.copsilot-tool-call-header') as HTMLElement;
     const statEl = hdr.querySelector('.tc-stat') as HTMLElement;
+
+    // Update filename when rawInput/locations become available (in_progress event)
+    if (rawInput) {
+      const fileEl = hdr.querySelector('.tc-file') as HTMLElement;
+      if (fileEl) {
+        const rawPath = (locations?.[0]?.path ?? rawInput.file_path ?? rawInput.filePath ?? rawInput.path) as string | undefined;
+        if (rawPath) {
+          const fileName = rawPath.split(/[\\/]/).pop() ?? rawPath;
+          fileEl.textContent = fileName;
+        }
+      }
+    }
 
     const body = box.querySelector('.copsilot-tool-call-body') as HTMLElement;
 

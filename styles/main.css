@@ -121,6 +121,17 @@
   font-size: var(--font-smaller);
 }
 
+.copsilot-tool-call-header .tc-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--text-accent);
+}
+.copsilot-tool-call-header .tc-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
 .copsilot-tool-call-header .tc-kind {
   font-size: 10px;
   font-weight: 600;
