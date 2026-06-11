@@ -24,7 +24,7 @@ import { SessionUpdateNormalizer } from './sessionUpdateNormalizer';
 import type { NormalizedUpdate } from '../types';
 import { AcpRequestHandler } from './AcpRequestHandler';
 
-export const CLIENT_VERSION = '0.1.3';
+export const CLIENT_VERSION = '0.1.4';
 
 export interface AcpSessionMeta {
   availableCommands: AvailableCommand[];
@@ -214,7 +214,7 @@ export class AcpClient implements OpencodeClient {
 	private readonly maxReconnectAttempts = 3;
 	private isIntentionalDisconnect = false;
 	private methodCache = new Map<AcpLogicalMethod, string>();
-	private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+	private reconnectTimer: number | null = null;
 
   constructor(cmdPath: string, cwd?: string) {
     this.cmdPath = cmdPath;
@@ -539,7 +539,7 @@ export class AcpClient implements OpencodeClient {
 
   private clearReconnectTimer(): void {
     if (!this.reconnectTimer) return;
-    clearTimeout(this.reconnectTimer);
+    window.clearTimeout(this.reconnectTimer);
     this.reconnectTimer = null;
   }
 
@@ -598,7 +598,7 @@ export class AcpClient implements OpencodeClient {
     if (this.isIntentionalDisconnect || this.reconnectTimer) return;
     this.reconnectAttempts++;
     const delay = 2000 * this.reconnectAttempts; // Exponential backoff
-    this.reconnectTimer = setTimeout(() => {
+    this.reconnectTimer = window.setTimeout(() => {
       this.reconnectTimer = null;
       if (this.isIntentionalDisconnect || this.connected || !this.onReconnect) return;
       this.connect().then(() => this.onReconnect?.()).then(() => {

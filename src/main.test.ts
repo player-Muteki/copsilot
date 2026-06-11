@@ -41,10 +41,11 @@ describe('CopsilotPlugin view activation', () => {
     const lateDuplicate = createLeaf(() => leaves.splice(leaves.indexOf(lateDuplicate), 1));
     const workspace = {
       getLeavesOfType: vi.fn((viewType: string) => (viewType === VIEW_TYPE ? leaves : [])),
-      ensureSideLeaf: vi.fn().mockImplementation(async () => {
+      getRightLeaf: vi.fn(() => {
         leaves.push(created, lateDuplicate);
         return created;
       }),
+      getLeaf: vi.fn(),
       revealLeaf: vi.fn(),
     };
     const plugin = createPlugin(workspace);

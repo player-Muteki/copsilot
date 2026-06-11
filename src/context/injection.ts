@@ -27,11 +27,12 @@ export class ContextInjection {
   }
 
   static injectWikilinks(text: string, vault: { getAbstractFileByPath: (path: string) => unknown }): string {
-    return text.replace(/`([^`]+)`/g, (match, code) => {
+    return text.replace(/`([^`]+)`/g, (match: string, code: string) => {
       if (!code.includes('/') && !code.includes('\\')) return match;
-      const abstract = vault.getAbstractFileByPath(code);
-      if (abstract) {
-        const basename = (abstract as { basename?: string }).basename ?? code;
+      const abstract: unknown = vault.getAbstractFileByPath(code);
+      if (abstract && typeof abstract === 'object' && 'basename' in abstract) {
+        const file = abstract as { basename: string };
+        const basename = file.basename ?? code;
         return `[[${code}|${basename}]]`;
       }
       return match;

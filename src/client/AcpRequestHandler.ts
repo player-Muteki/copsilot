@@ -112,14 +112,14 @@ export class AcpRequestHandler {
 		}
 	}
 
-	private handleServerRequestPermission(params: Record<string, unknown>): Promise<unknown> {
+	private handleServerRequestPermission = (params: Record<string, unknown>): Promise<unknown> => {
 		const req: PermissionRequest = {
 			sessionId: params.sessionId as string,
 			toolCall: params.toolCall as PermissionRequest['toolCall'],
 			options: params.options as PermissionOption[],
 		};
 
-		const handler = this.onPermissionRequest ?? this.requestPermission;
+		const handler = this.onPermissionRequest ?? ((r: PermissionRequest) => this.requestPermission(r));
 		return Promise.resolve(handler(req)).then((decision: string) => ({
 			sessionId: params.sessionId,
 			decision: { optionId: decision },

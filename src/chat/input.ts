@@ -15,11 +15,13 @@ export class ChatInput {
   private textarea: HTMLTextAreaElement;
   private disabled = false;
   private streaming = false;
+  private doc: Document;
 
   constructor(
     container: HTMLDivElement,
     private callbacks: InputCallbacks,
   ) {
+    this.doc = container.ownerDocument ?? document;
     const handle = container.createDiv({ cls: 'copsilot-input-resize-handle' });
     this.setupResizeHandle(handle, container);
 
@@ -47,9 +49,9 @@ export class ChatInput {
       const onMove = (ev: MouseEvent) => {
         container.style.height = Math.min(400, Math.max(144, startH + startY - ev.clientY)) + 'px';
       };
-      const onUp = () => { handle.removeClass('dragging'); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
+      const onUp = () => { handle.removeClass('dragging'); this.doc.removeEventListener('mousemove', onMove); this.doc.removeEventListener('mouseup', onUp); };
+      this.doc.addEventListener('mousemove', onMove);
+      this.doc.addEventListener('mouseup', onUp);
     });
   }
 

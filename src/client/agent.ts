@@ -43,14 +43,14 @@ export class AgentRuntime implements OpencodeClient {
   async sendMessage(id: string, parts: PromptPart[], handler: (u: NormalizedUpdate) => void): Promise<AcpResponse> {
     const timeoutMs = this.idleTimeoutMs;
     if (timeoutMs <= 0) {
-      return this.acp.sendMessage(id, parts, handler) as Promise<AcpResponse>;
+      return this.acp.sendMessage(id, parts, handler);
     }
     return new Promise<AcpResponse>((resolve, reject) => {
-      let timeout: NodeJS.Timeout;
+      let timeout: number;
 
       const resetTimeout = () => {
-        if (timeout) clearTimeout(timeout);
-        timeout = setTimeout(() => {
+        if (timeout) window.clearTimeout(timeout);
+        timeout = window.setTimeout(() => {
           reject(new AcpTimeoutError('sendMessage', timeoutMs));
         }, timeoutMs);
       };
@@ -64,12 +64,12 @@ export class AgentRuntime implements OpencodeClient {
 
       this.acp.sendMessage(id, parts, heartbeatHandler)
         .then((res) => {
-          clearTimeout(timeout);
-          resolve(res as AcpResponse);
+          window.clearTimeout(timeout);
+          resolve(res);
         })
-        .catch((err) => {
-          clearTimeout(timeout);
-          reject(err);
+        .catch((err: unknown) => {
+          window.clearTimeout(timeout);
+          reject(err instanceof Error ? err : new Error(String(err)));
         });
     });
   }

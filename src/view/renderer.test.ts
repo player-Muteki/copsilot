@@ -111,20 +111,20 @@ describe('ChatRenderer', () => {
 
     it('collapses by default', () => {
       renderer.appendThinking('Thinking...');
-      const body = container.querySelector('.copsilot-thinking-body') as HTMLElement;
-      expect(body?.style.display).toBe('none');
+      const box = container.querySelector('.copsilot-thinking') as HTMLElement;
+      expect(box?.classList.contains('is-collapsed')).toBe(true);
     });
 
     it('toggles on header click', () => {
       renderer.appendThinking('Thinking...');
       const header = container.querySelector('.copsilot-thinking-header') as HTMLElement;
-      const body = container.querySelector('.copsilot-thinking-body') as HTMLElement;
+      const box = container.querySelector('.copsilot-thinking') as HTMLElement;
 
       header.click();
-      expect(body.style.display).toBe('block');
+      expect(box.classList.contains('is-collapsed')).toBe(false);
 
       header.click();
-      expect(body.style.display).toBe('none');
+      expect(box.classList.contains('is-collapsed')).toBe(true);
     });
   });
 
@@ -150,13 +150,13 @@ describe('ChatRenderer', () => {
     it('toggles body on header click', () => {
       renderer.addToolCall('call-1', 'Search', 'search', { q: 'test' });
       const header = container.querySelector('.copsilot-tool-call-header') as HTMLElement;
-      const body = container.querySelector('.copsilot-tool-call-body') as HTMLElement;
+      const box = container.querySelector('.copsilot-tool-call') as HTMLElement;
 
-      expect(body.style.display).toBe('none');
+      expect(box.classList.contains('is-collapsed')).toBe(true);
       header.click();
-      expect(body.style.display).toBe('block');
+      expect(box.classList.contains('is-collapsed')).toBe(false);
       header.click();
-      expect(body.style.display).toBe('none');
+      expect(box.classList.contains('is-collapsed')).toBe(true);
     });
   });
 

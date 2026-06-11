@@ -46,10 +46,10 @@ export class DragDropManager {
 		};
 		this.dropZoneEl.addEventListener('dragleave', this.dragLeaveHandler);
 
-		this.dropHandler = async (e: DragEvent) => {
+		this.dropHandler = (e: DragEvent) => {
 			e.preventDefault();
 			this.hideDragOverlay();
-			await this.handleDrop(e);
+			void this.handleDrop(e);
 		};
 		this.dropZoneEl.addEventListener('drop', this.dropHandler);
 	}

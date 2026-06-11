@@ -38,7 +38,7 @@ function isAllowedCommand(command: string): boolean {
 
 interface ExitWaiter {
 	resolve: (value: { exitCode: number | null; signal: string | null } | null) => void;
-	timeout: NodeJS.Timeout;
+	timeout: number;
 }
 
 export class TerminalManager {
@@ -156,7 +156,7 @@ export class TerminalManager {
 		}
 
 		return new Promise((resolve) => {
-			const timeout = setTimeout(() => {
+			const timeout = window.setTimeout(() => {
 				this.exitWaiters.delete(terminalId);
 				this.kill(terminalId);
 				resolve({ exitCode: null, signal: 'SIGTERM' });
@@ -185,7 +185,7 @@ export class TerminalManager {
 	 */
 	dispose(): void {
 		for (const [, waiter] of this.exitWaiters) {
-			clearTimeout(waiter.timeout);
+			window.clearTimeout(waiter.timeout);
 		}
 		this.exitWaiters.clear();
 
@@ -239,7 +239,7 @@ export class TerminalManager {
 
 				const waiter = this.exitWaiters.get(terminalId);
 				if (waiter) {
-					clearTimeout(waiter.timeout);
+					window.clearTimeout(waiter.timeout);
 					this.exitWaiters.delete(terminalId);
 					waiter.resolve({ exitCode: code, signal });
 				}
@@ -254,14 +254,14 @@ export class TerminalManager {
 
 				const waiter = this.exitWaiters.get(terminalId);
 				if (waiter) {
-					clearTimeout(waiter.timeout);
+					window.clearTimeout(waiter.timeout);
 					this.exitWaiters.delete(terminalId);
 					waiter.resolve({ exitCode: 1, signal: null });
 				}
 			});
 
 			// Set timeout
-			setTimeout(() => {
+			window.setTimeout(() => {
 				if (instance.status === 'running') {
 					this.kill(terminalId);
 					instance.output += '\n[Process timed out]';

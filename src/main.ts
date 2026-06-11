@@ -8,14 +8,6 @@ import type { CopsilotSettings, SerializedSession, SerializedMessage, PluginData
 import { getVaultPath } from './utils/vault';
 import { setLocale, t } from './i18n/index';
 
-interface WorkspaceWithSideLeaf {
-  ensureSideLeaf?: (
-    viewType: string,
-    side: 'left' | 'right',
-    options?: { active?: boolean; reveal?: boolean },
-  ) => Promise<import('obsidian').WorkspaceLeaf>;
-}
-
 export default class CopsilotPlugin extends Plugin {
   settings: CopsilotSettings = DEFAULT_SETTINGS;
   client: AgentRuntime | null = null;
@@ -45,8 +37,8 @@ export default class CopsilotPlugin extends Plugin {
     this.addRibbonIcon('terminal-square', 'Open Copsilot', () => this.activateView());
     this.addSettingTab(new CopsilotSettingsTab(this));
     this.addCommand({
-      id: 'open-copsilot',
-      name: 'Open Copsilot',
+      id: 'open',
+      name: 'Open',
       callback: () => this.activateView(),
     });
     this.addCommand({
@@ -56,12 +48,12 @@ export default class CopsilotPlugin extends Plugin {
     });
   }
 
-  override onunload(): void { this.client?.disconnect(); }
+  override onunload(): void { void this.client?.disconnect(); }
 
   // ── Unified storage ──
 
   override async loadData(): Promise<PluginData | null> {
-    const saved = await super.loadData();
+    const saved: unknown = await super.loadData();
     if (!saved) return null;
 
     const hasPluginData = typeof saved === 'object'
@@ -166,23 +158,16 @@ export default class CopsilotPlugin extends Plugin {
     const existing = this.deduplicateCopsilotLeaves();
     if (existing) {
       await existing.setViewState({ type: VIEW_TYPE, active: true });
-      this.app.workspace.revealLeaf(existing);
+      void this.app.workspace.revealLeaf(existing);
       this.deduplicateCopsilotLeaves();
       return;
     }
 
-    const workspace = this.app.workspace as typeof this.app.workspace & WorkspaceWithSideLeaf;
-    let leaf = null as import('obsidian').WorkspaceLeaf | null;
-
-    if (typeof workspace.ensureSideLeaf === 'function') {
-      leaf = await workspace.ensureSideLeaf(VIEW_TYPE, 'right', { active: true, reveal: true });
-    } else {
-      leaf = this.app.workspace.getRightLeaf(true) ?? this.app.workspace.getLeaf(true);
-    }
+    const leaf = this.app.workspace.getRightLeaf(true) ?? this.app.workspace.getLeaf(true);
 
     if (!leaf) return;
     await leaf.setViewState({ type: VIEW_TYPE, active: true });
-    this.app.workspace.revealLeaf(leaf);
+    void this.app.workspace.revealLeaf(leaf);
     this.deduplicateCopsilotLeaves();
   }
 

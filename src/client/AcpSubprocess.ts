@@ -61,11 +61,11 @@ export class AcpSubprocess {
     await new Promise<void>((resolve) => {
       const proc = this.proc!;
       let done = false;
-      let timeout: NodeJS.Timeout | null = null;
+      let timeout: number | null = null;
       const onDone = () => {
         if (done) return;
         done = true;
-        if (timeout) clearTimeout(timeout);
+        if (timeout) window.clearTimeout(timeout);
         proc.removeAllListeners();
         resolve();
       };
@@ -75,7 +75,7 @@ export class AcpSubprocess {
       } catch {
         onDone();
       }
-      timeout = setTimeout(() => {
+      timeout = window.setTimeout(() => {
         if (!done) proc.kill('SIGKILL');
         onDone();
       }, SIGKILL_TIMEOUT_MS);

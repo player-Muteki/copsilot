@@ -427,31 +427,32 @@ export class CopsilotViewController {
 				}
 			}
 		} finally {
-			if (this.genId !== currentGen) return;
 			this.deps.renderer.removeAssistantPlaceholder();
-			this.busy = false;
-			this.state.isStreaming = false;
-			this.deps.input.setStreaming(false);
-			this.deps.toolbar.setSending(false);
-			this.deps.input.focus();
-			if (this.state.usage) {
-				this.deps.renderer.showUsage({
-					...this.state.usage,
-					modelId: this.state.currentModelId ?? undefined,
-					elapsedMs: Date.now() - this.sendStartTime,
-				});
-			}
-			if (inlineEdit && this.deps.inlineEditPanel.pendingState === inlineEdit) {
-				const session = this.deps.sessionStore.get(sessionId ?? '');
-				if (session) {
-					const lastMsg = session.messages.slice().reverse().find(m => m.role === 'assistant');
-					if (lastMsg) {
-						this.deps.inlineEditPanel.showDiffFromResponse(inlineEdit.original, lastMsg.content);
-					}
+			if (this.genId === currentGen) {
+				this.busy = false;
+				this.state.isStreaming = false;
+				this.deps.input.setStreaming(false);
+				this.deps.toolbar.setSending(false);
+				this.deps.input.focus();
+				if (this.state.usage) {
+					this.deps.renderer.showUsage({
+						...this.state.usage,
+						modelId: this.state.currentModelId ?? undefined,
+						elapsedMs: Date.now() - this.sendStartTime,
+					});
 				}
-				this.deps.inlineEditPanel.pendingState = null;
+				if (inlineEdit && this.deps.inlineEditPanel.pendingState === inlineEdit) {
+					const session = this.deps.sessionStore.get(sessionId ?? '');
+					if (session) {
+						const lastMsg = session.messages.slice().reverse().find(m => m.role === 'assistant');
+						if (lastMsg) {
+							this.deps.inlineEditPanel.showDiffFromResponse(inlineEdit.original, lastMsg.content);
+						}
+					}
+					this.deps.inlineEditPanel.pendingState = null;
+				}
+				void this.drainQueue();
 			}
-			this.drainQueue();
 		}
 	}
 
@@ -510,7 +511,7 @@ export class CopsilotViewController {
 		for (let i = session.messages.length - 1; i >= 0; i--) {
 			const msg = session.messages[i];
 			if (msg.role === 'assistant' && msg.type !== 'thinking') {
-				navigator.clipboard.writeText(msg.content);
+				void navigator.clipboard.writeText(msg.content);
 				break;
 			}
 		}

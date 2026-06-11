@@ -38,6 +38,12 @@ export function installObsidianDomHelpers(): void {
   HTMLElement.prototype.setText = function setText(text: string): void {
     this.textContent = text;
   };
+
+  HTMLElement.prototype.setCssProps = function setCssProps(props: Record<string, string>): void {
+    for (const [key, value] of Object.entries(props)) {
+      this.style.setProperty(key, value);
+    }
+  };
 }
 
 function applyOptions(el: HTMLElement, options: CreateElOptions): void {

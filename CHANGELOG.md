@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.4 - 2026-06-11
+
+### Fixed
+- Pass Obsidian plugin review: replace `style.setProperty` with `setCssProps`, split control-character regex, fix `async onclick` promise returns, suppress `display` deprecation with compatibility note.
+- Popout window compatibility: replace bare `document`/`clearTimeout`/`setTimeout`/`requestAnimationFrame` with `window.*` / `ownerDocument` across all modules.
+- Type safety: add type guards for unsafe any access, wrap non-Error rejections, remove unnecessary type assertions.
+- Command ID/name no longer include plugin name.
+- Plugin now passes Obsidian community plugin review checklist (no Errors, no Warnings — only one Recommendation for `display` deprecation held back by minAppVersion 1.8.0).
+
 ## 0.1.3 - 2026-06-10
 
 ### Features

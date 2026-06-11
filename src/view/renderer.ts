@@ -1,5 +1,5 @@
-import type { App, Component } from 'obsidian';
-import { MarkdownRenderer, setIcon } from 'obsidian';
+import type { App } from 'obsidian';
+import { MarkdownRenderer, setIcon, type Component } from 'obsidian';
 import { ContextInjection } from '../context/injection';
 import { t, onLocaleChange } from '../i18n/index';
 
@@ -30,12 +30,14 @@ export interface UsageDisplay {
 export class ChatRenderer {
   private container: HTMLDivElement;
   private app: App;
+  private doc: Document;
   private shouldAutoScroll: () => boolean;
   private currentAssistantEl: HTMLDivElement | null = null;
   private currentAssistantWrap: HTMLDivElement | null = null;
   private currentAssistantText = '';
   private currentAssistantId: string | null = null;
   private currentAssistantType: 'text' | 'thinking' = 'text';
+  private thinkingWrapEl: HTMLDivElement | null = null;
   private thinkingEl: HTMLDivElement | null = null;
   private thinkingCollapsed = true;
   private planEl: HTMLDivElement | null = null;
@@ -47,6 +49,7 @@ export class ChatRenderer {
   constructor(container: HTMLDivElement, app: App, shouldAutoScroll: () => boolean = () => true) {
     this.container = container;
     this.app = app;
+    this.doc = container.ownerDocument ?? document;
     this.shouldAutoScroll = shouldAutoScroll;
     onLocaleChange(() => this.refreshLocale());
   }
@@ -59,25 +62,26 @@ export class ChatRenderer {
     this.currentAssistantText = '';
     this.currentAssistantId = null;
     this.currentAssistantType = 'text';
+    this.thinkingWrapEl = null;
     this.thinkingEl = null;
     this.planEl = null;
     this.placeholderEl = null;
     this.usageEls.clear();
     if (this.renderTimeout !== null) {
-      clearTimeout(this.renderTimeout);
+      window.clearTimeout(this.renderTimeout);
       this.renderTimeout = null;
     }
   }
 
   private scrollToBottom(): void {
     if (!this.shouldAutoScroll()) return;
-    requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
       this.container.scrollTop = this.container.scrollHeight;
     });
   }
 
   forceScrollToBottom(): void {
-    requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
       this.container.scrollTop = this.container.scrollHeight;
     });
   }
@@ -126,7 +130,7 @@ export class ChatRenderer {
       this.currentAssistantWrap = wrap;
       this.currentAssistantEl = wrap.createDiv({ cls: 'copsilot-msg-body' });
     }
-    if (this.renderTimeout !== null) clearTimeout(this.renderTimeout);
+    if (this.renderTimeout !== null) window.clearTimeout(this.renderTimeout);
     this.renderTimeout = window.setTimeout(() => {
       this.renderMarkdown();
       this.renderTimeout = null;
@@ -140,7 +144,7 @@ export class ChatRenderer {
     const existing = this.currentAssistantEl.querySelector('.md-render-subsystem');
     if (existing) existing.remove();
 
-    const placeholder = document.createElement('div');
+    const placeholder = this.doc.createElement('div');
     placeholder.addClass('md-render-subsystem');
     this.currentAssistantEl.appendChild(placeholder);
 
@@ -150,7 +154,8 @@ export class ChatRenderer {
       this.app.vault
     );
 
-    MarkdownRenderer.renderMarkdown(
+    MarkdownRenderer.render(
+      this.app,
       textWithWikilinks,
       placeholder,
       '',
@@ -168,16 +173,16 @@ export class ChatRenderer {
       const pre = codeEl.parentElement;
       if (!pre || pre.querySelector('.copsilot-copy-btn')) return;
 
-      const btn = document.createElement('button');
+      const btn = this.doc.createElement('button');
       btn.className = 'copsilot-copy-btn';
       btn.textContent = t().copy.button;
-      btn.onclick = async () => {
+      btn.onclick = () => {
         const text = codeEl.textContent || '';
-        await navigator.clipboard.writeText(text);
+        void navigator.clipboard.writeText(text);
         btn.textContent = t().copy.copied;
-        setTimeout(() => { btn.textContent = t().copy.button; }, 1500);
+        window.setTimeout(() => { btn.textContent = t().copy.button; }, 1500);
       };
-      pre.style.position = 'relative';
+      pre.classList.add('copsilot-code-block');
       pre.appendChild(btn);
     });
   }
@@ -196,16 +201,16 @@ export class ChatRenderer {
     if (!this.thinkingEl) {
       const wrap = this.container.createDiv({ cls: 'copsilot-msg assistant' });
       wrap.dataset.timestamp = this.formatTimestamp(timestamp ?? Date.now());
-      const box = wrap.createDiv({ cls: 'copsilot-thinking' });
+      const box = wrap.createDiv({ cls: 'copsilot-thinking is-collapsed' });
+      this.thinkingWrapEl = box;
       const hdr = box.createDiv({ cls: 'copsilot-thinking-header', text: t().thinking.header });
       this.thinkingEl = box.createDiv({ cls: 'copsilot-thinking-body' });
-      this.thinkingEl.style.display = 'none';
       hdr.onclick = () => {
         this.thinkingCollapsed = !this.thinkingCollapsed;
-        this.thinkingEl!.style.display = this.thinkingCollapsed ? 'none' : 'block';
+        this.thinkingWrapEl?.classList.toggle('is-collapsed');
       };
     }
-    this.thinkingEl.appendChild(document.createTextNode(text));
+    this.thinkingEl.appendChild(this.doc.createTextNode(text));
     this.scrollToBottom();
   }
 
@@ -228,10 +233,10 @@ export class ChatRenderer {
 
     hdr.createSpan({ text: '…', cls: 'tc-stat' });
 
-    const body = box.createDiv({ cls: 'copsilot-tool-call-body' });
-    body.style.display = 'none';
+    box.createDiv({ cls: 'copsilot-tool-call-body' });
+    box.classList.add('is-collapsed');
 
-    hdr.onclick = () => { body.style.display = body.style.display === 'none' ? 'block' : 'none'; };
+    hdr.onclick = () => { box.classList.toggle('is-collapsed'); };
 
     this.toolEls.set(id, box);
   }
@@ -295,7 +300,7 @@ export class ChatRenderer {
   }
 
   private renderDiff(path: string, oldText: string, newText: string): HTMLElement {
-    const container = document.createElement('div');
+    const container = this.doc.createElement('div');
     container.className = 'copsilot-diff';
 
     const header = container.createDiv({ cls: 'copsilot-diff-header', text: path });
@@ -338,7 +343,7 @@ export class ChatRenderer {
     }
 
     header.onclick = () => {
-      body.style.display = body.style.display === 'none' ? 'block' : 'none';
+      container.classList.toggle('is-collapsed');
     };
 
     return container;
@@ -368,15 +373,17 @@ export class ChatRenderer {
         cls: 'copsilot-error-action',
         text: actionLabel,
       });
-      btn.onclick = async () => {
+      btn.onclick = () => {
         btn.disabled = true;
         btn.textContent = '...';
-        try {
-          await actionCallback();
-        } finally {
-          btn.disabled = false;
-          btn.textContent = actionLabel;
-        }
+        void (async () => {
+          try {
+            await actionCallback();
+          } finally {
+            btn.disabled = false;
+            btn.textContent = actionLabel;
+          }
+        })();
       };
     }
 

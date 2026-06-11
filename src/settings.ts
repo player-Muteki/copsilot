@@ -40,7 +40,11 @@ export class CopsilotSettingsTab extends PluginSettingTab {
     super(plugin.app, plugin);
   }
 
-  display(): void {
+  // display is deprecated since Obsidian 1.13.0, but minAppVersion is 1.8.0
+  // so getSettingDefinitions() cannot be used until the target is bumped.
+  override display(): void { this.render(); }
+
+  private render(): void {
     const { containerEl } = this;
     containerEl.empty();
     const s = this.plugin.settings;
@@ -183,7 +187,7 @@ export class CopsilotSettingsTab extends PluginSettingTab {
           };
           s.customAgents.push(agent);
           await this.save();
-          this.display();
+          this.render();
         }));
 
     new Setting(containerEl).setName(labels.customSkills.heading).setHeading();
@@ -223,7 +227,7 @@ export class CopsilotSettingsTab extends PluginSettingTab {
           };
           s.customSkills.push(skill);
           await this.save();
-          this.display();
+          this.render();
         }));
 
     // ── Common Models ──
@@ -264,7 +268,7 @@ export class CopsilotSettingsTab extends PluginSettingTab {
           };
           s.mcpServers.push(server);
           await this.save();
-          this.display();
+          this.render();
         }));
 
     // ── Sync Rules ──
@@ -287,7 +291,7 @@ export class CopsilotSettingsTab extends PluginSettingTab {
           };
           s.syncRules.push(rule);
           await this.save();
-          this.display();
+          this.render();
         }));
 
     // ── Appearance ──
@@ -303,7 +307,7 @@ export class CopsilotSettingsTab extends PluginSettingTab {
           setLocale(v);
           await this.save();
           this.refreshOpenViewsLocale();
-          this.display();
+          this.render();
         }));
 
     new Setting(containerEl)
@@ -471,10 +475,10 @@ export class CopsilotSettingsTab extends PluginSettingTab {
         .onChange(async (v) => { rule.filenameTemplate = v; await this.save(); }));
 
     const delBtn = block.createEl('button', { text: labels.delete, cls: 'mod-warning' });
-    delBtn.onclick = async () => {
+    delBtn.onclick = () => {
       this.plugin.settings.syncRules = this.plugin.settings.syncRules.filter((r: SyncRule) => r.id !== rule.id);
-      await this.save();
-      this.display();
+      void this.save();
+      this.render();
     };
   }
 
@@ -501,7 +505,7 @@ export class CopsilotSettingsTab extends PluginSettingTab {
 
   private async runDiagnostics(): Promise<void> {
     this.diagnosticsRunning = true;
-    this.display();
+    this.render();
 
     try {
       this.diagnosticsResults = await this.collectDiagnostics();
@@ -510,7 +514,7 @@ export class CopsilotSettingsTab extends PluginSettingTab {
       this.diagnosticsResults = [{ label: labels.heading, ok: false, detail: labels.unexpectedError }];
     } finally {
       this.diagnosticsRunning = false;
-      this.display();
+      this.render();
     }
   }
 
@@ -588,7 +592,7 @@ export class CopsilotSettingsTab extends PluginSettingTab {
     new Setting(block)
       .setName(labels.enabled)
       .addToggle((toggle) => toggle.setValue(agent.enabled)
-        .onChange(async (value) => { agent.enabled = value; await this.save(); this.display(); }));
+        .onChange(async (value) => { agent.enabled = value; await this.save(); this.render(); }));
 
     new Setting(block)
       .setName(labels.id)
@@ -632,11 +636,11 @@ export class CopsilotSettingsTab extends PluginSettingTab {
         }));
 
     const delBtn = block.createEl('button', { text: locale().settings.sync.delete, cls: 'mod-warning' });
-    delBtn.onclick = async () => {
+    delBtn.onclick = () => {
       this.plugin.settings.customAgents = this.plugin.settings.customAgents.filter((item) => item.id !== agent.id);
       if (this.plugin.settings.activeCustomAgentId === agent.id) this.plugin.settings.activeCustomAgentId = '';
-      await this.save();
-      this.display();
+      void this.save();
+      this.render();
     };
   }
 
@@ -683,13 +687,13 @@ export class CopsilotSettingsTab extends PluginSettingTab {
       });
 
     const delBtn = block.createEl('button', { text: locale().settings.sync.delete, cls: 'mod-warning' });
-    delBtn.onclick = async () => {
+    delBtn.onclick = () => {
       this.plugin.settings.customSkills = this.plugin.settings.customSkills.filter((item) => item.id !== skill.id);
       for (const agent of this.plugin.settings.customAgents) {
         agent.skillIds = agent.skillIds.filter((id) => id !== skill.id);
       }
-      await this.save();
-      this.display();
+      void this.save();
+      this.render();
     };
   }
 
@@ -752,7 +756,7 @@ export class CopsilotSettingsTab extends PluginSettingTab {
             this.plugin.settings.mcpServers[idx] = { type: newType, id: server.id, enabled: server.enabled, name: server.name, url: 'http://localhost:3000', headers: [] };
           }
           await this.save();
-          this.display();
+          this.render();
         });
       });
 
@@ -779,11 +783,10 @@ export class CopsilotSettingsTab extends PluginSettingTab {
 
       const envDetails = block.createEl('details', { cls: 'copsilot-mcp-env-details' });
       envDetails.createEl('summary', { text: labels.env });
-      const securityNote = envDetails.createEl('p', {
+      envDetails.createEl('p', {
         cls: 'copsilot-mcp-env-warning',
         text: labels.envWarning,
       });
-      securityNote.style.cssText = 'font-size: var(--font-small); color: var(--text-warning); margin: 8px 0;';
 
       const renderEnvVars = () => {
         envDetails.querySelectorAll('.copsilot-mcp-env-var, .copsilot-mcp-env-add').forEach((el) => el.remove());
@@ -791,30 +794,25 @@ export class CopsilotSettingsTab extends PluginSettingTab {
         for (let i = 0; i < envVars.length; i++) {
           const envVar = envVars[i];
           const row = envDetails.createDiv({ cls: 'copsilot-mcp-env-var' });
-          row.style.display = 'flex';
-          row.style.gap = '8px';
-          row.style.marginBottom = '8px';
 
-          const nameInput = row.createEl('input', { type: 'text', placeholder: labels.envName });
+          const nameInput = row.createEl('input', { type: 'text', placeholder: labels.envName, cls: 'copsilot-mcp-env-input-name' });
           nameInput.value = envVar.name;
-          nameInput.style.flex = '1';
           nameInput.onchange = async () => {
             envVar.name = nameInput.value.trim();
             await this.save();
           };
 
-          const valueInput = row.createEl('input', { type: 'text', placeholder: labels.envValue });
+          const valueInput = row.createEl('input', { type: 'text', placeholder: labels.envValue, cls: 'copsilot-mcp-env-input-value' });
           valueInput.value = envVar.value;
-          valueInput.style.flex = '2';
           valueInput.onchange = async () => {
             envVar.value = valueInput.value.trim();
             await this.save();
           };
 
           const delEnvBtn = row.createEl('button', { text: '✕' });
-          delEnvBtn.onclick = async () => {
+          delEnvBtn.onclick = () => {
             stdioServer.env = stdioServer.env?.filter((_, index) => index !== i);
-            await this.save();
+            void this.save();
             renderEnvVars();
           };
         }
@@ -848,30 +846,25 @@ export class CopsilotSettingsTab extends PluginSettingTab {
         for (let i = 0; i < headersVars.length; i++) {
           const headerVar = headersVars[i];
           const row = headersDetails.createDiv({ cls: 'copsilot-mcp-header-var' });
-          row.style.display = 'flex';
-          row.style.gap = '8px';
-          row.style.marginBottom = '8px';
 
-          const nameInput = row.createEl('input', { type: 'text', placeholder: 'Name' });
+          const nameInput = row.createEl('input', { type: 'text', placeholder: 'Name', cls: 'copsilot-mcp-header-input-name' });
           nameInput.value = headerVar.name;
-          nameInput.style.flex = '1';
           nameInput.onchange = async () => {
             headerVar.name = nameInput.value.trim();
             await this.save();
           };
 
-          const valueInput = row.createEl('input', { type: 'text', placeholder: 'Value' });
+          const valueInput = row.createEl('input', { type: 'text', placeholder: 'Value', cls: 'copsilot-mcp-header-input-value' });
           valueInput.value = headerVar.value;
-          valueInput.style.flex = '2';
           valueInput.onchange = async () => {
             headerVar.value = valueInput.value.trim();
             await this.save();
           };
 
           const delHeaderBtn = row.createEl('button', { text: '✕' });
-          delHeaderBtn.onclick = async () => {
+          delHeaderBtn.onclick = () => {
             httpServer.headers = httpServer.headers?.filter((_, index) => index !== i);
-            await this.save();
+            void this.save();
             renderHeaders();
           };
         }
@@ -891,10 +884,10 @@ export class CopsilotSettingsTab extends PluginSettingTab {
     }
 
     const delBtn = block.createEl('button', { text: locale().settings.sync.delete, cls: 'mod-warning' });
-    delBtn.onclick = async () => {
+    delBtn.onclick = () => {
       this.plugin.settings.mcpServers = this.plugin.settings.mcpServers.filter((item) => item.id !== server.id);
-      await this.save();
-      this.display();
+      void this.save();
+      this.render();
     };
   }
 
@@ -981,7 +974,7 @@ export class CopsilotSettingsTab extends PluginSettingTab {
       this.runtimeModels = models.length > 0 ? models : snapshot.availableModels;
       this.runtimeSkills = skills.length > 0 ? skills : snapshot.availableCommands;
       this.runtimeOptionsLoaded = true;
-      this.display();
+      this.render();
     } finally {
       this.runtimeOptionsLoading = false;
     }

@@ -63,6 +63,8 @@ export class CopsilotView extends ItemView {
 	// Event listener references for cleanup on close
 	private scrollHandler: (() => void) | null = null;
 
+	private get doc(): Document { return this.contentEl?.ownerDocument ?? document; }
+
 	constructor(
 		leaf: WorkspaceLeaf,
 		private plugin: CopsilotPlugin,
@@ -101,28 +103,28 @@ export class CopsilotView extends ItemView {
 
 		// Context arc meter (right of title)
 		this.meterEl = header.createDiv({ cls: 'copsilot-arc-meter' });
-		const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+		const svg = this.doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
 		svg.setAttribute('viewBox', '0 0 40 24');
 		svg.setAttribute('class', 'copsilot-arc-svg');
 		const R = 18;
 		const C = 20;
 		const ARC_LEN = Math.PI * R;
-		const track = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+		const track = this.doc.createElementNS('http://www.w3.org/2000/svg', 'path');
 		track.setAttribute('d', `M ${C - R} ${C} A ${R} ${R} 0 0 1 ${C + R} ${C}`);
 		track.setAttribute('class', 'copsilot-arc-track');
 		svg.appendChild(track);
-		const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-		const clipPath = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
+		const defs = this.doc.createElementNS('http://www.w3.org/2000/svg', 'defs');
+		const clipPath = this.doc.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
 		const arcClipId = `arc-clip-${Math.random().toString(36).slice(2)}`;
 		clipPath.setAttribute('id', arcClipId);
-		const clipRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+		const clipRect = this.doc.createElementNS('http://www.w3.org/2000/svg', 'rect');
 		clipRect.setAttribute('y', '20');
 		clipRect.setAttribute('width', '40');
 		clipRect.setAttribute('height', '24');
 		clipPath.appendChild(clipRect);
 		defs.appendChild(clipPath);
 		svg.appendChild(defs);
-		this.meterArcFill = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+		this.meterArcFill = this.doc.createElementNS('http://www.w3.org/2000/svg', 'circle');
 		this.meterArcFill.setAttribute('cx', String(C));
 		this.meterArcFill.setAttribute('cy', String(C));
 		this.meterArcFill.setAttribute('r', String(R));
@@ -153,8 +155,8 @@ export class CopsilotView extends ItemView {
 		// ── Input ──
 		this.inputAreaEl = el.createDiv({ cls: 'copsilot-input-area' });
 		this.input = new ChatInput(this.inputAreaEl, {
-			onSend: (text: string) => this.send(text),
-			onStop: () => this.stopGeneration(),
+			onSend: (text: string) => { void this.send(text); },
+			onStop: () => { void this.stopGeneration(); },
 			onCycleMode: (direction) => {
 				if (direction === 1) this.toolbar.cycleMode();
 				else this.toolbar.cycleModeReverse();

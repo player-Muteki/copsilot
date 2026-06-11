@@ -13,6 +13,7 @@ export interface SessionDropdownCallbacks {
 export class SessionDropdown {
 	private dropdownEl: HTMLDivElement | null = null;
 	private outsideHandler: ((e: MouseEvent) => void) | null = null;
+	private doc: Document;
 
 	constructor(
 		private container: HTMLElement,
@@ -21,7 +22,9 @@ export class SessionDropdown {
 		private getCurrentSessionId: () => string | null,
 		private callbacks: SessionDropdownCallbacks,
 		private getAgentCapabilities: () => AgentCapabilities | null = () => null,
-	) {}
+	) {
+		this.doc = container.ownerDocument ?? document;
+	}
 
 	open(): void {
 		if (this.dropdownEl) {
@@ -35,9 +38,10 @@ export class SessionDropdown {
 		const dd = this.container.createDiv({ cls: 'copsilot-session-list' });
 
 		const rect = this.anchorEl.getBoundingClientRect();
-		dd.style.position = 'fixed';
-		dd.style.top = `${rect.bottom + 4}px`;
-		dd.style.right = `${Math.max(8, window.innerWidth - rect.right)}px`;
+		dd.setCssProps({
+			'--dropdown-top': `${rect.bottom + 4}px`,
+			'--dropdown-right': `${Math.max(8, window.innerWidth - rect.right)}px`,
+		});
 
 		const searchInput = canList
 			? dd.createEl('input', {
@@ -97,7 +101,7 @@ export class SessionDropdown {
 			if (this.dropdownEl.contains(target) || this.anchorEl.contains(target)) return;
 			this.close();
 		};
-		document.addEventListener('mousedown', this.outsideHandler, true);
+		this.doc.addEventListener('mousedown', this.outsideHandler, true);
 	}
 
 	close(): void {
@@ -106,7 +110,7 @@ export class SessionDropdown {
 			this.dropdownEl = null;
 		}
 		if (this.outsideHandler) {
-			document.removeEventListener('mousedown', this.outsideHandler, true);
+			this.doc.removeEventListener('mousedown', this.outsideHandler, true);
 			this.outsideHandler = null;
 		}
 	}
@@ -135,9 +139,9 @@ export class SessionDropdown {
 			button.setAttribute('title', disabledTitle);
 			return;
 		}
-		button.onclick = async (e: MouseEvent) => {
+		button.onclick = (e: MouseEvent) => {
 			e.stopPropagation();
-			await onClick();
+			void onClick();
 		};
 	}
 }

@@ -7,7 +7,7 @@ interface PendingRequest {
   method: string;
   resolve: (value: unknown) => void;
   reject: (error: Error) => void;
-  timeout: NodeJS.Timeout | null;
+		timeout: number | null;
   abortHandler: (() => void) | null;
 }
 
@@ -55,11 +55,11 @@ export class AcpJsonRpcTransport {
     const effectiveTimeout = timeoutMs ?? this.defaultTimeoutMs;
 
     return new Promise<T>((resolve, reject) => {
-      let timeout: NodeJS.Timeout | null = null;
+      let timeout: number | null = null;
       let abortHandler: (() => void) | null = null;
 
       if (effectiveTimeout > 0) {
-        timeout = setTimeout(() => {
+        timeout = window.setTimeout(() => {
           this.pending.delete(id);
           reject(new AcpTimeoutError(method, effectiveTimeout));
         }, effectiveTimeout);
@@ -67,12 +67,12 @@ export class AcpJsonRpcTransport {
 
       if (signal) {
         if (signal.aborted) {
-          if (timeout) clearTimeout(timeout);
+          if (timeout) window.clearTimeout(timeout);
           reject(new AcpAbortError(method));
           return;
         }
         abortHandler = () => {
-          if (timeout) clearTimeout(timeout);
+          if (timeout) window.clearTimeout(timeout);
           if (!this.pending.has(id)) return;
           this.pending.delete(id);
           reject(new AcpAbortError(method));
@@ -111,7 +111,7 @@ export class AcpJsonRpcTransport {
 
   rejectPending(error: Error): void {
     for (const [, entry] of this.pending) {
-      if (entry.timeout) clearTimeout(entry.timeout);
+      if (entry.timeout) window.clearTimeout(entry.timeout);
       if (entry.abortHandler) entry.abortHandler();
       entry.reject(error);
     }
@@ -139,7 +139,7 @@ export class AcpJsonRpcTransport {
     if (!line.trim()) return;
     let parsed: Record<string, unknown>;
     try {
-      parsed = JSON.parse(line);
+      parsed = JSON.parse(line) as Record<string, unknown>;
     } catch {
       return;
     }
@@ -153,7 +153,7 @@ export class AcpJsonRpcTransport {
       const entry = this.pending.get(id);
       this.pending.delete(id);
       if (entry) {
-        if (entry.timeout) clearTimeout(entry.timeout);
+        if (entry.timeout) window.clearTimeout(entry.timeout);
         if (entry.abortHandler) entry.abortHandler();
         entry.resolve(parsed.result);
       }
@@ -161,7 +161,7 @@ export class AcpJsonRpcTransport {
       const entry = this.pending.get(id);
       this.pending.delete(id);
       if (entry) {
-        if (entry.timeout) clearTimeout(entry.timeout);
+        if (entry.timeout) window.clearTimeout(entry.timeout);
         if (entry.abortHandler) entry.abortHandler();
         const errObj = parsed.error as { code?: number; message?: string; data?: unknown };
         entry.reject(

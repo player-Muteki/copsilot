@@ -14,11 +14,14 @@ export class Autocomplete {
 	private dropdownEl: HTMLDivElement | null = null;
 	private outsideHandler: ((e: MouseEvent) => void) | null = null;
 	private keyHandler: ((e: KeyboardEvent) => void) | null = null;
+	private doc: Document;
 
 	constructor(
 		private container: HTMLElement,
 		private callbacks: AutocompleteCallbacks,
-	) {}
+	) {
+		this.doc = container.ownerDocument ?? document;
+	}
 
 	open(items: ACItem[], mode: '@' | '/'): void {
 		this.close();
@@ -109,14 +112,14 @@ export class Autocomplete {
 				render();
 			}
 		};
-		document.addEventListener('keydown', this.keyHandler, true);
+		this.doc.addEventListener('keydown', this.keyHandler, true);
 
 		this.outsideHandler = (evt: MouseEvent) => {
 			const target = evt.target as Node;
 			if (ac.contains(target)) return;
 			this.close();
 		};
-		document.addEventListener('mousedown', this.outsideHandler, true);
+		this.doc.addEventListener('mousedown', this.outsideHandler, true);
 	}
 
 	close(): void {
@@ -125,11 +128,11 @@ export class Autocomplete {
 			this.dropdownEl = null;
 		}
 		if (this.outsideHandler) {
-			document.removeEventListener('mousedown', this.outsideHandler, true);
+			this.doc.removeEventListener('mousedown', this.outsideHandler, true);
 			this.outsideHandler = null;
 		}
 		if (this.keyHandler) {
-			document.removeEventListener('keydown', this.keyHandler, true);
+			this.doc.removeEventListener('keydown', this.keyHandler, true);
 			this.keyHandler = null;
 		}
 	}

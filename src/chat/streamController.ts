@@ -142,7 +142,7 @@ export class StreamController {
 		this.assistantMessageIndex.clear();
 		this.deps.state.resetStreamingState();
 		if (this.saveTimer !== null) {
-			clearTimeout(this.saveTimer);
+			window.clearTimeout(this.saveTimer);
 			this.saveTimer = null;
 		}
 	}
@@ -192,7 +192,7 @@ export class StreamController {
 	}
 
 	private scheduleSave(): void {
-		if (this.saveTimer !== null) clearTimeout(this.saveTimer);
-		this.saveTimer = window.setTimeout(() => this.deps.sessionStore.save(), 500);
+		if (this.saveTimer !== null) window.clearTimeout(this.saveTimer);
+		this.saveTimer = window.setTimeout(() => { void this.deps.sessionStore.save(); }, 500);
 	}
 }
