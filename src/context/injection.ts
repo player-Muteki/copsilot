@@ -1,7 +1,7 @@
 import type { App, Vault } from 'obsidian';
 import { MarkdownView, TFile, TFolder } from 'obsidian';
 
-const IDENTITY_CONCISE =
+const IDENTITY =
   'You are Copsilot, an AI assistant living inside the user\'s Obsidian vault. ' +
   'You treat notes as interconnected thoughts in a personal knowledge graph. ' +
   'You understand bi-directional linking, graph view, backlinks, tags, daily notes, and templates. ' +
@@ -9,52 +9,7 @@ const IDENTITY_CONCISE =
   'You are built on OpenCode but your identity is your own. ' +
   'Speak naturally and concisely as Copsilot.';
 
-const IDENTITY_DETAILED =
-  'You are Copsilot, an AI partner living inside the user\'s Obsidian vault. ' +
-  'You think of notes not as files but as atoms of thought — interconnected ideas forming a ' +
-  'personal knowledge graph. You deeply understand the philosophy of bi-directional linking: ' +
-  'every connection is a relationship waiting to be explored.\n\n' +
-  'Your user works in Obsidian, a tool for networked thought. They may use daily notes, ' +
-  'templates, tags, Dataview queries, and plugins. You understand the graph view, backlinks, ' +
-  'outgoing links, and the value of progressive summarization.\n\n' +
-  'You have genuine curiosity about the user\'s knowledge base. You notice patterns across notes, ' +
-  'suggest connections the user might have missed, and help them surface insights from their ' +
-  'own writing. When you see a note about a topic, you notice when it connects to other notes.\n\n' +
-  'Speak naturally as Copsilot — concise, insightful, occasionally opinionated. ' +
-  'You are built on OpenCode but your personality is your own: a thinking partner, not just a tool.';
-
-const IDENTITY_ACADEMIC =
-  'You are Copsilot, a research partner embedded in the user\'s Obsidian knowledge base. ' +
-  'You analyze the interconnected structure of their notes as a semantic network. ' +
-  'You are proficient in knowledge management methodologies including Zettelkasten, ' +
-  'Progressive Summarization, and PARA. You assist with literature review, ' +
-  'cross-referencing, and synthesis of ideas across disparate notes.\n\n' +
-  'You communicate with analytical precision. You cite specific notes and connections ' +
-  'when making observations. You prioritize accuracy and depth over brevity.';
-
-const IDENTITY_CASUAL =
-  'Hey, I\'m Copsilot — your AI buddy living inside your Obsidian vault! ' +
-  'I get that you use Obsidian to think and organize your ideas, and I\'m here to help ' +
-  'you make sense of it all. I know about bi-directional links, tags, daily notes, ' +
-  'and all the cool Obsidian stuff.\n\n' +
-  'I\'ll notice connections between your notes and point them out. ' +
-  'Feel free to ask me anything about your knowledge base! ' +
-  'I keep it friendly and straightforward.';
-
-const TONES: Record<string, string> = {
-  concise: IDENTITY_CONCISE,
-  detailed: IDENTITY_DETAILED,
-  academic: IDENTITY_ACADEMIC,
-  casual: IDENTITY_CASUAL,
-};
-
-export type IdentityTone = keyof typeof TONES;
-
 export class ContextInjection {
-  static getIdentity(tone: IdentityTone = 'concise'): string {
-    return TONES[tone] ?? TONES.concise;
-  }
-
   static build(resolved: Array<{ name: string; content: string }>): string {
     if (resolved.length === 0) return '';
     const blocks = resolved.map(
@@ -71,9 +26,8 @@ export class ContextInjection {
     instructions: string,
     customAgentPrompt = '',
     vaultContext = '',
-    tone: IdentityTone = 'concise',
   ): string {
-    const parts = [ContextInjection.getIdentity(tone)];
+    const parts = [IDENTITY];
     if (vaultContext.trim()) parts.push(vaultContext.trim());
     if (instructions.trim()) parts.push(instructions.trim());
     if (customAgentPrompt.trim()) parts.push(customAgentPrompt.trim());
@@ -116,7 +70,6 @@ export class ContextInjection {
   static async workflowHints(vault: Vault): Promise<string> {
     const hints: string[] = ['## Workflow Observations'];
 
-    // Check for daily notes
     for (const folderName of ['Daily', 'daily', 'Journal', 'journal', '日记']) {
       const folder = vault.getFolderByPath ? vault.getFolderByPath(folderName) : null;
       if (folder instanceof TFolder) {
@@ -128,7 +81,6 @@ export class ContextInjection {
       }
     }
 
-    // Check for templates
     for (const folderName of ['Templates', 'templates', '模板']) {
       const folder = vault.getFolderByPath ? vault.getFolderByPath(folderName) : null;
       if (folder instanceof TFolder) {
@@ -140,7 +92,6 @@ export class ContextInjection {
       }
     }
 
-    // Check for Projects folder
     for (const folderName of ['Projects', 'projects', '项目']) {
       const folder = vault.getFolderByPath ? vault.getFolderByPath(folderName) : null;
       if (folder instanceof TFolder) {

@@ -257,7 +257,6 @@ export interface CopsilotSettings {
 	permissionMode: PermissionLevel;
 	defaultNoteFolder: string;
 	systemPrompt: string;
-	identityTone?: string;
 	userPreferences?: UserPreferences;
 	language: string;
 	maxNoteSize: number;
@@ -286,7 +285,6 @@ export const DEFAULT_SETTINGS: CopsilotSettings = {
 	permissionMode: 'safe',
 	defaultNoteFolder: 'opencode-sync',
 	systemPrompt: '',
-	identityTone: 'concise',
 	language: 'en',
 	maxNoteSize: 8000,
 	syncRules: [

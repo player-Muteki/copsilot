@@ -236,14 +236,6 @@ const zh: Locale = {
     },
     systemPrompt: {
       heading: '系统提示词',
-      identityTone: 'Agent 身份语气',
-      identityToneDesc: '控制 Copsilot 的自我介绍和沟通风格',
-      tones: {
-        concise: '简洁实用',
-        detailed: '丰富描述',
-        academic: '分析学术',
-        casual: '友好随意',
-      },
       name: '自定义系统提示词',
       desc: '注入 Agent 的额外指令',
       placeholder: '输入自定义系统提示词...',
