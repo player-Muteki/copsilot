@@ -247,6 +247,14 @@ export interface UserPreferences {
   preferredResponseLength?: 'short' | 'medium' | 'long';
   commonTopics?: string[];
   useEmojis?: boolean;
+  /** @internal accumulated inference history */
+  _history?: {
+    styleCounts: Record<string, number>;
+    totalMessages: number;
+    emojiMessages: number;
+    topicCandidates: Record<string, number>;
+    totalLength: number;
+  };
 }
 
 export interface CopsilotSettings {

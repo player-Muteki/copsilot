@@ -502,10 +502,11 @@ export class CopsilotViewController {
 		);
 		const customAgentPrompt = buildCustomAgentPrompt(activeAgent, this.deps.plugin.settings.customSkills);
 		const vaultCtx = ContextInjectionClass.vaultContext(this.deps.plugin.app);
+		const pluginNames = ContextInjectionClass.detectPluginsRaw(this.deps.plugin.app);
 		const workflowHints = await ContextInjectionClass.workflowHints(this.deps.plugin.app.vault).catch(() => '');
 		const sectionCtx = ContextInjectionClass.activeSectionContext(this.deps.plugin.app);
-		const enrichedVaultCtx = [vaultCtx, workflowHints, sectionCtx].filter(Boolean).join('\n\n');
-		const sysPrompt = ContextInjectionClass.systemPrompt(this.deps.plugin.settings.systemPrompt, customAgentPrompt, enrichedVaultCtx);
+		const enrichedVaultCtx = [vaultCtx, sectionCtx].filter(Boolean).join('\n\n');
+		const sysPrompt = ContextInjectionClass.systemPrompt(this.deps.plugin.settings.systemPrompt, customAgentPrompt, enrichedVaultCtx, pluginNames, workflowHints);
 		const prefFragment = this.prefStore.toPromptFragment();
 		const combined = [sysPrompt, injection, prefFragment].filter(Boolean).join('\n\n');
 		if (combined) parts.push({ type: 'text', text: combined });

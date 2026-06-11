@@ -1,13 +1,33 @@
 import type { App, Vault } from 'obsidian';
 import { MarkdownView, TFile, TFolder } from 'obsidian';
 
-const IDENTITY =
+const BASE_IDENTITY =
   'You are Copsilot, an AI assistant living inside the user\'s Obsidian vault. ' +
   'You treat notes as interconnected thoughts in a personal knowledge graph. ' +
   'You understand bi-directional linking, graph view, backlinks, tags, daily notes, and templates. ' +
   'You notice patterns across notes and suggest connections the user may have missed. ' +
   'You are built on OpenCode but your identity is your own. ' +
   'Speak naturally and concisely as Copsilot.';
+
+/** Convert a plugin ID like "obsidian-tasks-plugin" or "quickadd" to a readable display name. */
+function idToDisplayName(id: string): string {
+  return id
+    .replace(/^obsidian-/, '')
+    .replace(/-plugin$/, '')
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+/** Build the full agent identity, combining base identity, plugin list, and workflow observations. */
+function buildIdentity(pluginNames: string[], workflowBlock: string): string {
+  const parts = [BASE_IDENTITY];
+  if (pluginNames.length > 0) {
+    parts.push(`## Enabled Plugins\n${pluginNames.join(', ')}.`);
+  }
+  if (workflowBlock) parts.push(workflowBlock);
+  return parts.join('\n\n');
+}
 
 export class ContextInjection {
   static build(resolved: Array<{ name: string; content: string }>): string {
@@ -25,13 +45,39 @@ export class ContextInjection {
   static systemPrompt(
     instructions: string,
     customAgentPrompt = '',
-    vaultContext = '',
+    vaultContextString = '',
+    pluginNames: string[] = [],
+    workflowHints = '',
   ): string {
-    const parts = [IDENTITY];
-    if (vaultContext.trim()) parts.push(vaultContext.trim());
+    const identity = buildIdentity(pluginNames, workflowHints);
+    const parts = [identity];
+    if (vaultContextString.trim()) parts.push(vaultContextString.trim());
     if (instructions.trim()) parts.push(instructions.trim());
     if (customAgentPrompt.trim()) parts.push(customAgentPrompt.trim());
     return parts.join('\n\n');
+  }
+
+  /** Detect enabled plugins and return display names. Accepts optional App. */
+  static detectPluginsRaw(app?: App): string[] {
+    const target = app ?? (typeof (globalThis as Record<string, unknown>).app !== 'undefined'
+      ? (globalThis as Record<string, unknown>).app as App : undefined);
+    if (!target) return [];
+    try {
+      const appAny = target as unknown as Record<string, unknown>;
+      const pluginsObj = appAny.plugins as Record<string, unknown> | undefined;
+      if (!pluginsObj) return [];
+      const pluginMap = pluginsObj.plugins as Record<string, { manifest?: { name?: string } }> | undefined;
+      if (!pluginMap) return [];
+      const names: string[] = [];
+      for (const id of Object.keys(pluginMap)) {
+        const plugin = pluginMap[id];
+        const name = plugin?.manifest?.name ?? idToDisplayName(id);
+        names.push(name);
+      }
+      return names.sort();
+    } catch {
+      return [];
+    }
   }
 
   static vaultContext(app: App): string {
@@ -43,25 +89,9 @@ export class ContextInjection {
     } catch {
       lines.push('Vault: unknown');
     }
-    try {
-      const appAny = app as unknown as Record<string, unknown>;
-      const pluginsObj = appAny.plugins as Record<string, unknown> | undefined;
-      const detected: string[] = [];
-      if (pluginsObj) {
-        const pluginMap = pluginsObj.plugins as Record<string, unknown> | undefined;
-        if (pluginMap) {
-          if (pluginMap['dataview']) detected.push('Dataview');
-          if (pluginMap['obsidian-tasks-plugin']) detected.push('Tasks');
-          if (pluginMap['calendar']) detected.push('Calendar');
-          if (pluginMap['templater-obsidian']) detected.push('Templater');
-          if (pluginMap['obsidian-kanban']) detected.push('Kanban');
-        }
-      }
-      if (detected.length > 0) {
-        lines.push(`Plugins: ${detected.join(', ')}`);
-      }
-    } catch {
-      // plugin detection is best-effort
+    const detected = ContextInjection.detectPluginsRaw(app);
+    if (detected.length > 0) {
+      lines.push(`Plugins: ${detected.join(', ')}`);
     }
     return lines.join('\n');
   }
