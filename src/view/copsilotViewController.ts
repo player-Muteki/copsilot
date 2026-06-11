@@ -19,6 +19,7 @@ import type { WelcomeView } from './welcomeView';
 import type { PermissionBanner } from './permissionBanner';
 import type { InlineEditPanel } from './inlineEditPanel';
 import { ContextInjection as ContextInjectionClass } from '../context/injection';
+import { UserPreferenceStore } from '../memory/preferences';
 import { AcpTimeoutError, AcpProcessExitError, AcpAbortError } from '../client/AcpErrors';
 
 export interface ControllerCallbacks {
@@ -59,11 +60,16 @@ export class CopsilotViewController {
 	private sendStartTime = 0;
 	private genId = 0;
 	private promptQueue: Array<{ text: string; refs: ContextRef[] }> = [];
+	private prefStore: UserPreferenceStore;
 
 	constructor(
 		private deps: ControllerDeps,
 		private callbacks: ControllerCallbacks,
 	) {
+		this.prefStore = new UserPreferenceStore(
+			() => deps.plugin.settings.userPreferences ?? {},
+			(p) => { deps.plugin.settings.userPreferences = p; try { void deps.plugin.savePluginData(); } catch {} },
+		);
 		this.streamCtrl = new StreamController({
 			state: this.state,
 			renderer: deps.renderer,
@@ -379,6 +385,7 @@ export class CopsilotViewController {
 		this.deps.renderer.addUserMessage(text);
 		this.streamCtrl.saveMessage('user', text, 'text');
 		this.deps.renderer.addAssistantPlaceholder();
+		this.prefStore.inferFromMessage(text);
 
 		try {
 			await this.syncRuntimeSession(sessionId);
@@ -494,8 +501,14 @@ export class CopsilotViewController {
 			this.deps.plugin.settings.customSkills,
 		);
 		const customAgentPrompt = buildCustomAgentPrompt(activeAgent, this.deps.plugin.settings.customSkills);
-		const sysPrompt = ContextInjectionClass.systemPrompt(this.deps.plugin.settings.systemPrompt, customAgentPrompt);
-		const combined = [sysPrompt, injection].filter(Boolean).join('\n\n');
+		const vaultCtx = ContextInjectionClass.vaultContext(this.deps.plugin.app);
+		const workflowHints = await ContextInjectionClass.workflowHints(this.deps.plugin.app.vault).catch(() => '');
+		const sectionCtx = ContextInjectionClass.activeSectionContext(this.deps.plugin.app);
+		const enrichedVaultCtx = [vaultCtx, workflowHints, sectionCtx].filter(Boolean).join('\n\n');
+		const tone = (this.deps.plugin.settings.identityTone ?? 'concise') as Parameters<typeof ContextInjectionClass.systemPrompt>[3];
+		const sysPrompt = ContextInjectionClass.systemPrompt(this.deps.plugin.settings.systemPrompt, customAgentPrompt, enrichedVaultCtx, tone);
+		const prefFragment = this.prefStore.toPromptFragment();
+		const combined = [sysPrompt, injection, prefFragment].filter(Boolean).join('\n\n');
 		if (combined) parts.push({ type: 'text', text: combined });
 
 		parts.push({ type: 'text', text });

@@ -134,6 +134,18 @@ export class CopsilotSettingsTab extends PluginSettingTab {
     new Setting(containerEl).setName(labels.systemPrompt.heading).setHeading();
 
     new Setting(containerEl)
+      .setName(labels.systemPrompt.identityTone)
+      .setDesc(labels.systemPrompt.identityToneDesc)
+      .addDropdown((d) => d.addOptions({
+        concise: labels.systemPrompt.tones.concise,
+        detailed: labels.systemPrompt.tones.detailed,
+        academic: labels.systemPrompt.tones.academic,
+        casual: labels.systemPrompt.tones.casual,
+      })
+        .setValue(s.identityTone ?? 'concise')
+        .onChange(async (v) => { s.identityTone = v; await this.save(); }));
+
+    new Setting(containerEl)
       .setName(labels.systemPrompt.name)
       .setDesc(labels.systemPrompt.desc)
       .addTextArea((c) => {
@@ -473,6 +485,12 @@ export class CopsilotSettingsTab extends PluginSettingTab {
       .setDesc(labels.filenameTemplateDesc)
       .addText((t) => t.setValue(rule.filenameTemplate)
         .onChange(async (v) => { rule.filenameTemplate = v; await this.save(); }));
+
+    new Setting(block)
+      .setName(labels.intelligentPlacement)
+      .setDesc(labels.intelligentPlacementDesc)
+      .addToggle((t) => t.setValue(rule.intelligentPlacement ?? false)
+        .onChange(async (v) => { rule.intelligentPlacement = v; await this.save(); }));
 
     const delBtn = block.createEl('button', { text: labels.delete, cls: 'mod-warning' });
     delBtn.onclick = () => {

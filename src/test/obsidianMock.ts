@@ -17,6 +17,10 @@ export class TFile extends TAbstractFile {
   stat!: unknown;
 }
 
+export class TFolder extends TAbstractFile {
+  children: TAbstractFile[] = [];
+}
+
 export class Component {}
 
 export class Plugin extends Component {
@@ -192,4 +196,13 @@ class ButtonComponent {
   setButtonText(text: string): this { this.buttonEl.textContent = text; return this; }
   setCta(): this { this.buttonEl.addClass('mod-cta'); return this; }
   onClick(handler: () => void | Promise<void>): this { this.buttonEl.onclick = () => { void handler(); }; return this; }
+}
+
+export class Editor {
+  getCursor(): { line: number; ch: number } { return { line: 0, ch: 0 }; }
+  getValue(): string { return ''; }
+}
+
+export class MarkdownView {
+  editor: Editor = new Editor();
 }

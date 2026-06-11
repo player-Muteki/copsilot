@@ -236,6 +236,14 @@ const zh: Locale = {
     },
     systemPrompt: {
       heading: '系统提示词',
+      identityTone: 'Agent 身份语气',
+      identityToneDesc: '控制 Copsilot 的自我介绍和沟通风格',
+      tones: {
+        concise: '简洁实用',
+        detailed: '丰富描述',
+        academic: '分析学术',
+        casual: '友好随意',
+      },
       name: '自定义系统提示词',
       desc: '注入 Agent 的额外指令',
       placeholder: '输入自定义系统提示词...',
@@ -276,6 +284,8 @@ const zh: Locale = {
       folder: '文件夹',
       filenameTemplate: '文件名模板',
       filenameTemplateDesc: '变量：{{tool}}、{{date}}、{{shortId}}',
+      intelligentPlacement: '智能分类',
+      intelligentPlacementDesc: '根据内容分析自动路由到智能文件夹（会议、任务、日记等）',
       delete: '删除',
     },
     appearance: {

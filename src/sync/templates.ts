@@ -58,7 +58,7 @@ function globLikeMatch(pattern: string, value: string): boolean {
   return regex.test(value);
 }
 
-export function buildSyncNote(ctx: SyncContext, folder: string, filenameTemplate: string, template?: string): { path: string; content: string } {
+export function buildSyncNote(ctx: SyncContext, folder: string, filenameTemplate: string, template?: string, intelligentPlacement = false): { path: string; content: string } {
   const now = new Date().toISOString();
   const shortId = Math.random().toString(36).slice(2, 8);
   const filename = filenameTemplate
@@ -66,14 +66,50 @@ export function buildSyncNote(ctx: SyncContext, folder: string, filenameTemplate
     .replace(/\{\{date\}\}/g, now.slice(0, 10))
     .replace(/\{\{shortId\}\}/g, shortId);
 
-  const sanitized = sanitizeVaultPath(folder, filename);
+  const resolvedFolder = intelligentPlacement ? intelligentFolder(ctx, folder) : folder;
+  const sanitized = sanitizeVaultPath(resolvedFolder, filename);
   if (!sanitized) {
-    throw new Error(`Invalid sync path: folder="${folder}", filename="${filename}"`);
+    throw new Error(`Invalid sync path: folder="${resolvedFolder}", filename="${filename}"`);
   }
 
   const fm = ['---', `tool: ${ctx.toolName}`, `timestamp: ${now}`, `status: ${ctx.toolStatus}`, '---'].join('\n');
   const body = template ?? `## ${ctx.toolName}\n\n${getSyncBody(ctx)}`;
   return { path: `${sanitized.folder}/${sanitized.filename}`, content: fm + '\n\n' + body };
+}
+
+/** Route content to an appropriate folder based on content analysis. */
+export function intelligentFolder(ctx: SyncContext, defaultFolder: string): string {
+  const content = ctx.content || (typeof ctx.rawOutput?.output === 'string' ? ctx.rawOutput.output : '');
+  if (!content) return defaultFolder;
+
+  // Detect meeting-like content
+  if (/meeting|standup|sync|retro|1:1|one-on-one/i.test(content)) {
+    return 'Meetings';
+  }
+
+  // Detect journal / daily note content
+  if (/today I|journal|日记|reflection|grateful/i.test(content)) {
+    return 'Journal';
+  }
+
+  // Detect task lists
+  if (/- \[.\]/.test(content)) {
+    return 'Tasks';
+  }
+
+  // Detect learning / research content
+  if (/\b(learn|study|research|summary|TL;DR|key takeaway)\b/i.test(content)) {
+    return 'Learning';
+  }
+
+  // Extract first tag from content to use as folder
+  const tagMatch = content.match(/#([\w-/]+)/);
+  if (tagMatch) {
+    const tagFolder = tagMatch[1].split('/')[0];
+    return tagFolder;
+  }
+
+  return defaultFolder;
 }
 
 function getSyncBody(ctx: SyncContext): string {

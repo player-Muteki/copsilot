@@ -161,6 +161,7 @@ export interface SyncRule {
   folder: string;
   filenameTemplate: string;
   template?: string;
+  intelligentPlacement?: boolean;
 }
 
 export interface McpServerEnvVar {
@@ -241,6 +242,13 @@ export interface PluginData {
   activeSessionId: string | null;
 }
 
+export interface UserPreferences {
+  writingStyle?: 'concise' | 'detailed' | 'academic' | 'casual';
+  preferredResponseLength?: 'short' | 'medium' | 'long';
+  commonTopics?: string[];
+  useEmojis?: boolean;
+}
+
 export interface CopsilotSettings {
 	opencodePath: string;
 	defaultAgent: string;
@@ -249,6 +257,8 @@ export interface CopsilotSettings {
 	permissionMode: PermissionLevel;
 	defaultNoteFolder: string;
 	systemPrompt: string;
+	identityTone?: string;
+	userPreferences?: UserPreferences;
 	language: string;
 	maxNoteSize: number;
 	syncRules: SyncRule[];
@@ -276,6 +286,7 @@ export const DEFAULT_SETTINGS: CopsilotSettings = {
 	permissionMode: 'safe',
 	defaultNoteFolder: 'opencode-sync',
 	systemPrompt: '',
+	identityTone: 'concise',
 	language: 'en',
 	maxNoteSize: 8000,
 	syncRules: [

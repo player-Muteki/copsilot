@@ -29,7 +29,7 @@ export class SyncEngine {
       for (const rule of this.rules) {
         if (!ruleMatches(rule, ctx)) continue;
         try {
-          const note = buildSyncNote(ctx, rule.folder, rule.filenameTemplate, rule.template);
+          const note = buildSyncNote(ctx, rule.folder, rule.filenameTemplate, rule.template, rule.intelligentPlacement);
           if (!this.isSafePath(note.path)) {
             failures.push({ rule, error: new Error(`Unsafe sync path: ${note.path}`) });
             continue;

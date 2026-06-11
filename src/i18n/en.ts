@@ -234,6 +234,14 @@ const en = {
     },
     systemPrompt: {
       heading: 'System Prompt',
+      identityTone: 'Agent Identity Tone',
+      identityToneDesc: 'Controls how Copsilot introduces itself and communicates',
+      tones: {
+        concise: 'Concise & Practical',
+        detailed: 'Rich & Descriptive',
+        academic: 'Analytical & Academic',
+        casual: 'Friendly & Casual',
+      },
       name: 'Custom System Prompt',
       desc: 'Additional instructions injected into the agent system prompt',
       placeholder: 'Enter custom system prompt instructions...',
@@ -274,6 +282,8 @@ const en = {
       folder: 'Folder',
       filenameTemplate: 'Filename Template',
       filenameTemplateDesc: 'Variables: {{tool}}, {{date}}, {{shortId}}',
+      intelligentPlacement: 'Intelligent Placement',
+      intelligentPlacementDesc: 'Auto-route content to smart folders (Meetings, Tasks, Journal, etc.) based on content analysis',
       delete: 'Delete',
     },
     appearance: {
