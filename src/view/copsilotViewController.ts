@@ -494,7 +494,9 @@ export class CopsilotViewController {
 		);
 		const customAgentPrompt = buildCustomAgentPrompt(activeAgent, this.deps.plugin.settings.customSkills);
 		const customInstructions = [this.deps.plugin.settings.systemPrompt, customAgentPrompt].filter(Boolean).join('\n\n');
-		const combined = buildSystemPrompt(customInstructions);
+		const sysPrompt = buildSystemPrompt(customInstructions);
+		const notesBlock = buildNotesBlock(resolved);
+		const combined = [sysPrompt, notesBlock].filter(Boolean).join('\n\n');
 		if (combined) parts.push({ type: 'text', text: combined });
 
 		parts.push({ type: 'text', text });
@@ -624,4 +626,16 @@ export class CopsilotViewController {
 		this.callbacks.onClearPendingImageChips();
 	}
 
+}
+
+function buildNotesBlock(resolved: Array<{ name: string; content: string }>): string {
+  if (resolved.length === 0) return '';
+  const blocks = resolved.map(
+    (r) => `=== NOTE: [[${r.name}]] ===\n${r.content}\n=== END NOTE ===`,
+  );
+  return (
+    'The user has referenced the following Obsidian notes in their message.\n' +
+    'You should consider their content as relevant context for your response:\n\n' +
+    blocks.join('\n\n')
+  );
 }

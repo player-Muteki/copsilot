@@ -8,59 +8,35 @@
 
 > English | [中文](#中文)
 
-An Obsidian plugin that embeds the complete [OpenCode](https://opencode.ai) AI Agent in your vault. Your notes become the agent's context. Ask questions, summarize notes, or create new content without ever leaving Obsidian.
+An Obsidian plugin that brings the [OpenCode](https://opencode.ai) AI Agent into your vault as a living assistant. It understands your notes, explores your vault structure, and helps you think, write, and organize. All without leaving Obsidian.
 
 ## Why Copsilot
 
-Most Obsidian AI plugins need either third-party API keys (ongoing token costs) or middleware layers (extra token consumption). Copsilot connects directly to your local OpenCode CLI, which provides free token quotas sufficient for most note-taking users. No API keys, no middlemen. Direct Agent access with free token quotas.
+Most Obsidian AI plugins need third-party API keys (ongoing token costs) or middleware layers (extra token consumption). Copsilot connects directly to your local OpenCode CLI, which provides free token quotas that cover most note-taking use cases. No API keys, no middlemen.
 
 ## Features
 
-**Chat Sidebar** — Open from the ribbon icon or command palette. Talk to the OpenCode Agent directly inside Obsidian, with streaming responses rendered in real-time.
+**Chat Sidebar**: Open from the ribbon icon or command palette. Talk to the OpenCode Agent directly inside Obsidian with streaming responses rendered in real-time.
 
-**`@mention` Notes** — Type `@` to reference any note in your vault. The agent reads and understands your existing knowledge base, then answers, summarizes, or creates content based on it.
+**`@mention` Notes**: Type `@` to reference any note in your vault. The agent reads and understands your existing knowledge base, then answers, summarizes, or creates content based on it.
 
-**Auto-Save Output as Notes** — AI-generated content saves directly to your local Vault via the sync engine. No manual copy-paste needed.
+**Auto-Save Output as Notes**: AI-generated content saves directly to your local Vault via the sync engine. No manual copy-paste.
 
-**Drag & Drop** — Drop files and images directly into the chat for the agent to analyze or reference.
+**Model & Mode Switching**: Switch AI models and Agent modes (`build` / `plan` / `docs`) in the toolbar. Mode cycles on click; model opens a hover dropdown.
 
-**Multi-Session Management** — Run multiple conversations simultaneously. Sessions persist across Obsidian restarts with configurable retention policies.
+**Custom Agents & Skills**: Define local agent profiles and reusable skill instructions in Settings, then inject them into new chat prompts.
 
-**Model & Mode Switching** — Switch AI models and Agent modes (`build` / `plan` / `docs`) directly in the toolbar. Mode cycles on click; model opens a hover dropdown.
+**Streaming Response Rendering**: Real-time rendering of Markdown, thinking blocks, tool calls (with filename display for read/write/edit operations), and plan panels.
 
-**Custom Agents & Skills** — Define local agent profiles and reusable skill instructions in Settings, then inject them into new chat prompts.
+**Sync Engine**: Tool call results (file edits, writes) are written back to Vault notes based on configurable sync rules with filename templates.
 
-**Streaming Response Rendering** — Real-time rendering of Markdown, thinking blocks, tool calls (with filename display for read/write/edit operations), and plan panels.
+**Permission Modes**: Choose your control level: `yolo` (auto-approve all), `plan` (approve safe operations), or `safe` (confirm every action). Permission cycles on click with color-coded borders.
 
-**Sync Engine** — Tool call results (file edits, writes) are automatically written back to Vault notes based on configurable sync rules with filename templates.
+**Auto-Reconnect**: Recovers automatically when the OpenCode process crashes.
 
-**Permission Modes** — Choose your level of control: `yolo` (auto-approve all), `plan` (approve safe operations), or `safe` (confirm every action). Permission cycles on click with color-coded borders.
+**i18n (Internationalization)**: Switch between English and Chinese UI in Settings > Appearance.
 
-**Auto-Reconnect** — Automatically recovers when the OpenCode process crashes.
-
-**i18n (Internationalization)** — Switch between English and Chinese UI in Settings → Appearance. Community translations welcome.
-
-Language changes apply immediately to the settings tab and open Copsilot views, including notices, toolbar labels, inline edit UI, and runtime error messages. The selected language persists across plugin restarts.
-
-**MCP Servers** — Configure local MCP servers in Settings and attach them automatically when creating or restoring OpenCode sessions.
-
-## ACP Capability Matrix
-
-| Capability | Status | Note |
-|---|---|---|
-| newSession / loadSession / listSessions / closeSession / forkSession / resumeSession | ✅ | Includes method alias fallback |
-| session/update (12 update types) | ✅ | Full parseSessionUpdate coverage |
-| requestPermission (allow_once/allow_always/reject_once/reject_always) | ✅ | safe / plan / yolo modes |
-| MCP stdio | ✅ | Includes env configuration |
-| MCP http / sse | ✅ | Introduced in v0.0.22 |
-| promptCapabilities.image | ✅ | Drag-drop support |
-| promptCapabilities.audio | 🟡 | Types defined, UI not implemented |
-| terminal/* (create/output/kill/wait_for_exit/release) | ✅ | Introduced in v0.0.31 |
-| fs/read_text_file / fs/write_text_file | ✅ | Introduced in v0.0.30/v0.0.32 |
-| authMethods | 🟡 | Prompt only; login terminal not implemented |
-| agentCapabilities negotiation-driven UI | ✅ | Introduced in v0.0.24 |
-
-Legend: ✅ supported / 🟡 partially supported / ❌ not supported.
+**MCP Servers**: Configure local MCP servers in Settings and attach them when creating or restoring OpenCode sessions.
 
 ## Requirements
 
@@ -70,23 +46,11 @@ Legend: ✅ supported / 🟡 partially supported / ❌ not supported.
 
 ## Installation
 
-### Manual (recommended)
+### Obsidian Community Plugins (recommended)
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](../../releases/latest)
-2. Create a folder called `copsilot` in your vault's plugins folder:
-   ```
-   /path/to/vault/.obsidian/plugins/copsilot/
-   ```
-3. Copy the downloaded files into the `copsilot` folder
-4. Enable the plugin in Obsidian:
-   - Settings → Community plugins → Enable "Copsilot"
-
-### Via BRAT
-
-1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin
-2. Open BRAT settings → **Add Beta Plugin**
-3. Enter this repository URL
-4. Enable the plugin in Obsidian settings
+1. Open Obsidian Settings → Community plugins → Browse
+2. Search for "Copsilot" and install
+3. Enable the plugin in Community plugins settings
 
 ### From source (development)
 
@@ -96,13 +60,11 @@ Legend: ✅ supported / 🟡 partially supported / ❌ not supported.
    git clone https://github.com/player-Muteki/copsilot.git
    cd copsilot
    ```
-
 2. Install dependencies and build:
    ```bash
    npm install
    npm run build
    ```
-
 3. Enable the plugin in Obsidian:
    - Settings → Community plugins → Enable "Copsilot"
 
@@ -152,8 +114,8 @@ Runtime agents, models, and available commands/skills load from an existing Open
 ## Privacy & Data Use
 
 - **Sent to API**: Your input, referenced notes, attached files/images, and tool call outputs. All communication goes through your local OpenCode CLI, which handles provider API calls.
-- **Local storage**: Copsilot settings and session data stored in Obsidian's plugin data (`data.json` within `.obsidian/plugins/copsilot/`). Synced notes are created in your configured folder (default: `opencode-sync/`).
-- **No telemetry**: Copsilot does not send any telemetry or analytics data. Network activity is limited to the OpenCode CLI subprocess communicating with AI providers.
+- **Local storage**: Copsilot settings and session data are stored in Obsidian's plugin data (`data.json` within `.obsidian/plugins/copsilot/`). Synced notes are created in your configured folder (default: `opencode-sync/`).
+- **No telemetry**: Copsilot does not send telemetry or analytics data. Network activity is limited to the OpenCode CLI subprocess communicating with AI providers.
 - **Environment**: The OpenCode subprocess inherits the Obsidian process environment for PATH resolution and proxy configuration.
 
 ## Troubleshooting
@@ -221,7 +183,7 @@ src/
 ├── context/                     # Vault context management
 │   ├── mention.ts               # @mention note picker and resolution
 │   ├── resolver.ts              # Resolve note/file references to content
-│   └── injection.ts             # Inject resolved context into agent prompts
+│   └── injection.ts             # Build system prompt from BASE_IDENTITY + custom instructions
 │
 ├── sync/                        # Sync engine: agent → vault
 │   ├── engine.ts                # Execute sync rules, write tool results as notes
@@ -237,14 +199,14 @@ src/
 
 - [x] OpenCode ACP integration
 - [x] `@mention` vault notes
-- [x] Multi-session management
 - [x] Sync engine with configurable rules
 - [x] Model and mode switching
-- [x] Drag & drop files and images
 - [x] Inline edit (select text in note → AI edit with diff preview)
 - [x] MCP server support
 - [x] Custom agents and skills
 - [x] i18n (internationalization)
+- [ ] Full slash command support (local + ACP routing)
+- [ ] Enhanced `@mention` file support
 - [ ] More planned.
 
 ## License
@@ -274,7 +236,7 @@ Licensed under the [MIT License](LICENSE).
 
 > Beta，目前处于公开测试阶段。
 
-将完整的 [OpenCode](https://opencode.ai) AI Agent 嵌入 Obsidian 侧边栏。你的笔记就是 Agent 的上下文——在笔记中直接提问、总结、整理和创作。
+将 [OpenCode](https://opencode.ai) AI Agent 带入你的 Obsidian 仓库，成为一个住在 Vault 里的助手。它能理解你的笔记、探索仓库结构，帮你思考、写作和整理——全程不用离开 Obsidian。
 
 ## 为什么做 Copsilot
 
@@ -282,51 +244,27 @@ Licensed under the [MIT License](LICENSE).
 
 ## 功能特性
 
-**侧边栏对话** — 通过工具栏图标或命令面板打开。在 Obsidian 内直接与 OpenCode Agent 对话，流式响应实时渲染。
+**侧边栏对话**：通过工具栏图标或命令面板打开。在 Obsidian 内直接与 OpenCode Agent 对话，流式响应实时渲染。
 
-**`@提及` 笔记** — 输入 `@` 即可引用 Vault 中的任意笔记。Agent 能读取并理解你现有的知识库，然后基于笔记内容进行回答、总结或创作。
+**`@提及` 笔记**：输入 `@` 即可引用 Vault 中的任意笔记。Agent 能读取并理解你现有的知识库，然后基于笔记内容进行回答、总结或创作。
 
-**输出自动保存为笔记** — AI 生成的内容通过同步引擎直接保存到本地 Vault，无需手动复制粘贴。
+**输出自动保存为笔记**：AI 生成的内容通过同步引擎直接保存到本地 Vault，无需手动复制粘贴。
 
-**拖拽文件/图片** — 将文件和图片直接拖入对话框，供 Agent 分析或引用。
+**模型与模式切换**：在界面中直接切换 AI 模型和 Agent 模式（`build` / `plan` / `docs`）。
 
-**多会话管理** — 同时运行多个对话。会话在 Obsidian 重启后自动恢复，支持可配置的保留策略。
+**自定义 Agent 与技能**：在设置中定义本地 Agent 配置和可复用技能指令，并注入到新的对话提示词中。
 
-**模型与模式切换** — 在界面中直接切换 AI 模型和 Agent 模式（`build` / `plan` / `docs`）。
+**流式响应渲染**：实时渲染 Markdown、思考块、工具调用（读写编辑操作显示具体操作的文件名）和计划面板。
 
-**自定义 Agent 与技能** — 在设置中定义本地 Agent 配置和可复用技能指令，并注入到新的对话提示词中。
+**同步引擎**：工具调用结果（文件编辑、写入）根据可配置的同步规则和文件名模板，自动写回 Vault 笔记。
 
-**流式响应渲染** — 实时渲染 Markdown、思考块、工具调用（读写编辑操作显示具体操作的文件名）和计划面板。
+**权限模式**：选择控制级别：`yolo`（全部自动批准）/ `plan`（批准安全操作）/ `safe`（逐一确认）。
 
-**同步引擎** — 工具调用结果（文件编辑、写入）根据可配置的同步规则和文件名模板，自动写回 Vault 笔记。
+**自动重连**：OpenCode 进程崩溃后自动恢复连接。
 
-**权限模式** — 选择你的控制级别：`yolo`（全部自动批准）/ `plan`（批准安全操作）/ `safe`（逐一确认）。
+**国际化（i18n）**：在设置 → 外观中切换中英文界面。
 
-**自动重连** — OpenCode 进程崩溃后自动恢复连接。
-
-**国际化（i18n）** — 在设置 → 外观中切换中英文界面，社区翻译欢迎提交 PR。
-
-语言切换会立即应用到设置页和已打开的 Copsilot 视图，包括通知、工具栏文案、行内编辑界面和运行时错误提示。所选语言会在插件重启后保持生效。
-
-**MCP 服务器** — 在设置中配置本地 MCP 服务器，新建或恢复 OpenCode 会话时自动附加。
-
-## ACP 能力矩阵
-
-| 能力 | 状态 | 说明 |
-|---|---|---|
-| newSession / loadSession / listSessions / closeSession / forkSession / resumeSession | ✅ | 含方法别名回退 |
-| session/update（12 种 update 类型） | ✅ | parseSessionUpdate 全覆盖 |
-| requestPermission（allow_once/allow_always/reject_once/reject_always） | ✅ | safe / plan / yolo 三模式 |
-| MCP stdio | ✅ | 含 env 配置 |
-| MCP http / sse | ✅ | v0.0.22 引入 |
-| promptCapabilities.image | ✅ | drag-drop 支持 |
-| promptCapabilities.audio | 🟡 | 类型已定义，UI 未实现 |
-| terminal/*（create/output/kill/wait_for_exit/release） | ✅ | v0.0.31 引入 |
-| fs/read_text_file / fs/write_text_file | ✅ | v0.0.30/v0.0.32 引入 |
-| authMethods | 🟡 | 仅显示提示，未实现登录终端 |
-| agentCapabilities 协商驱动 UI | ✅ | v0.0.24 引入 |
-
-图例：✅ 已支持 / 🟡 部分支持 / ❌ 未支持。
+**MCP 服务器**：在设置中配置本地 MCP 服务器，新建或恢复 OpenCode 会话时自动附加。
 
 ## 系统要求
 
@@ -336,23 +274,11 @@ Licensed under the [MIT License](LICENSE).
 
 ## 安装方式
 
-### 手动安装（推荐）
+### Obsidian 官方插件市场（推荐）
 
-1. 从[最新 Release](../../releases/latest) 下载 `main.js`、`manifest.json` 和 `styles.css`
-2. 在 Vault 的插件目录中创建 `copsilot` 文件夹：
-   ```
-   /path/to/vault/.obsidian/plugins/copsilot/
-   ```
-3. 将下载的文件复制到 `copsilot` 文件夹
-4. 在 Obsidian 中启用插件：
-   - 设置 → 第三方插件 → 启用 "Copsilot"
-
-### 通过 BRAT 安装
-
-1. 安装 [BRAT](https://github.com/TfTHacker/obsidian42-brat) 插件
-2. 打开 BRAT 设置 → **Add Beta Plugin**
-3. 输入本仓库地址
-4. 在 Obsidian 设置中启用插件
+1. 打开 Obsidian 设置 → 第三方插件 → 社区插件市场
+2. 搜索 "Copsilot" 并安装
+3. 在第三方插件设置中启用插件
 
 ### 从源码安装（开发）
 
@@ -362,13 +288,11 @@ Licensed under the [MIT License](LICENSE).
    git clone https://github.com/player-Muteki/copsilot.git
    cd copsilot
    ```
-
 2. 安装依赖并构建：
    ```bash
    npm install
    npm run build
    ```
-
 3. 在 Obsidian 中启用插件：
    - 设置 → 第三方插件 → 启用 "Copsilot"
 
@@ -487,7 +411,7 @@ src/
 ├── context/                     # Vault 上下文管理
 │   ├── mention.ts               # @提及笔记选择器和解析
 │   ├── resolver.ts              # 将笔记/文件引用解析为实际内容
-│   └── injection.ts             # 将解析的上下文注入到 Agent 提示中
+│   └── injection.ts             # 从 BASE_IDENTITY + 自定义指令构建系统提示词
 │
 ├── sync/                        # 同步引擎：Agent → Vault
 │   ├── engine.ts                # 执行同步规则，将工具结果写入笔记
@@ -503,14 +427,14 @@ src/
 
 - [x] OpenCode ACP 集成
 - [x] `@提及` Vault 笔记
-- [x] 多会话管理
 - [x] 可配置规则的同步引擎
 - [x] 模型和模式切换
-- [x] 拖拽文件和图片
 - [x] 行内编辑（选中笔记文字 → AI 编辑并显示 Diff 预览）
 - [x] MCP 服务器支持
 - [x] 自定义 Agent 和技能
 - [x] 国际化（i18n）
+- [ ] 斜杠命令满血适配（本地 + ACP 路由）
+- [ ] @ 文件功能满血优化
 - [ ] 更多功能规划中
 
 ## 许可证
