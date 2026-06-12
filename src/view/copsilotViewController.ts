@@ -95,6 +95,10 @@ export class CopsilotViewController {
 		return this.streamCtrl;
 	}
 
+	dispose(): void {
+		this.streamCtrl.dispose();
+	}
+
 	// ── Connection ──
 
 	async ensureClientConnected(): Promise<boolean> {

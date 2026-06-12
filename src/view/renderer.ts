@@ -44,14 +44,20 @@ export class ChatRenderer {
   private toolEls = new Map<string, HTMLDivElement>();
   private placeholderEl: HTMLDivElement | null = null;
   private renderTimeout: number | null = null;
+  private thinkingRenderTimeout: number | null = null;
   private usageEls = new Map<HTMLDivElement, UsageDisplay>();
+  private unsubscribeLocale: () => void;
 
   constructor(container: HTMLDivElement, app: App, shouldAutoScroll: () => boolean = () => true) {
     this.container = container;
     this.app = app;
     this.doc = container.ownerDocument ?? activeDocument;
     this.shouldAutoScroll = shouldAutoScroll;
-    onLocaleChange(() => this.refreshLocale());
+    this.unsubscribeLocale = onLocaleChange(() => this.refreshLocale());
+  }
+
+  dispose(): void {
+    this.unsubscribeLocale();
   }
 
   clear(): void {
@@ -71,6 +77,10 @@ export class ChatRenderer {
     if (this.renderTimeout !== null) {
       window.clearTimeout(this.renderTimeout);
       this.renderTimeout = null;
+    }
+    if (this.thinkingRenderTimeout !== null) {
+      window.clearTimeout(this.thinkingRenderTimeout);
+      this.thinkingRenderTimeout = null;
     }
   }
 
@@ -153,7 +163,7 @@ export class ChatRenderer {
       this.app,
       this.currentAssistantText,
       placeholder,
-      '',
+      this.app.vault.getRoot().path,
       this.container as unknown as Component,
     ).then(() => {
       this.addCopyButtons(placeholder);
@@ -206,10 +216,10 @@ export class ChatRenderer {
       };
     }
     this.currentThinkingText += text;
-    if (this.renderTimeout !== null) window.clearTimeout(this.renderTimeout);
-    this.renderTimeout = window.setTimeout(() => {
+    if (this.thinkingRenderTimeout !== null) window.clearTimeout(this.thinkingRenderTimeout);
+    this.thinkingRenderTimeout = window.setTimeout(() => {
       this.renderThinkingMarkdown();
-      this.renderTimeout = null;
+      this.thinkingRenderTimeout = null;
     }, 50);
     this.scrollToBottom();
   }

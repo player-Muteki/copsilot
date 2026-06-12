@@ -128,7 +128,7 @@ export class AcpRequestHandler {
 
 	private async requestPermission(req: PermissionRequest): Promise<string> {
 		const reject = req.options.find((o) => o.kind === 'reject_once');
-		return reject?.optionId ?? req.options[0]?.optionId ?? 'reject_once';
+		return reject?.optionId ?? 'reject_once';
 	}
 
 	private handleReadTextFile(params: Record<string, unknown>): Promise<unknown> {

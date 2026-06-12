@@ -98,9 +98,10 @@ export default class CopsilotPlugin extends Plugin {
     const retentionDays = this.settings.sessionRetentionDays ?? 30;
     const cutoffTime = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
 
+    const activeId = this.activeSessionId;
     for (const [id, session] of this.sessions) {
-      // Remove old sessions
-      if (session.updatedAt < cutoffTime && session.messages.length === 0) {
+      // Remove old sessions (even with messages if past retention)
+      if (id !== activeId && session.updatedAt < cutoffTime) {
         this.sessions.delete(id);
         continue;
       }
@@ -191,6 +192,7 @@ export default class CopsilotPlugin extends Plugin {
   }
 
   private async connectClient(): Promise<boolean> {
+    this.resolveClientWaiters(false);
     try {
       const acp = new AcpClient(this.settings.opencodePath, getVaultPath(this.app));
       await acp.connect();

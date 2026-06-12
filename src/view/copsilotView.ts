@@ -27,6 +27,7 @@ interface MarkdownFileView {
 }
 
 export class CopsilotView extends ItemView {
+	private static clipIdCounter = 0;
 	private messagesEl!: HTMLDivElement;
 	private contextChipsEl!: HTMLDivElement;
 	private renderer!: ChatRenderer;
@@ -115,7 +116,7 @@ export class CopsilotView extends ItemView {
 		svg.appendChild(track);
 		const defs = this.doc.createElementNS('http://www.w3.org/2000/svg', 'defs');
 		const clipPath = this.doc.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
-		const arcClipId = `arc-clip-${Math.random().toString(36).slice(2)}`;
+		const arcClipId = `arc-clip-${CopsilotView.clipIdCounter++}`;
 		clipPath.setAttribute('id', arcClipId);
 		const clipRect = this.doc.createElementNS('http://www.w3.org/2000/svg', 'rect');
 		clipRect.setAttribute('y', '20');
@@ -343,6 +344,8 @@ export class CopsilotView extends ItemView {
 
 	override async onClose(): Promise<void> {
 		await this.controller?.stopGeneration();
+		this.controller?.dispose();
+		this.renderer?.dispose();
 		this.closeSessionDropdown();
 		this.closeAutocomplete();
 		this.keybindingMgr?.unregister();

@@ -2,9 +2,24 @@ export class Mutex {
   private queue: Array<() => void> = [];
   private locked = false;
 
-  async acquire(): Promise<() => void> {
-    return new Promise((resolve) => {
-      this.queue.push(() => resolve(() => this.release()));
+  async acquire(timeoutMs?: number): Promise<() => void> {
+    if (!timeoutMs) {
+      return new Promise((resolve) => {
+        this.queue.push(() => resolve(() => this.release()));
+        this.dispatch();
+      });
+    }
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        const idx = this.queue.indexOf(doAcquire);
+        if (idx !== -1) this.queue.splice(idx, 1);
+        reject(new Error('Mutex acquire timed out'));
+      }, timeoutMs);
+      const doAcquire = () => {
+        clearTimeout(timer);
+        resolve(() => this.release());
+      };
+      this.queue.push(doAcquire);
       this.dispatch();
     });
   }
@@ -22,8 +37,8 @@ export class Mutex {
     this.dispatch();
   }
 
-  async runExclusive<T>(callback: () => Promise<T>): Promise<T> {
-    const releaseFn = await this.acquire();
+  async runExclusive<T>(callback: () => Promise<T>, timeoutMs?: number): Promise<T> {
+    const releaseFn = await this.acquire(timeoutMs);
     try {
       return await callback();
     } finally {

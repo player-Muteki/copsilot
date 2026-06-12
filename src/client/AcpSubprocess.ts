@@ -78,7 +78,7 @@ export class AcpSubprocess {
       }
       timeout = nodeSetTimeout(() => {
         if (!done) proc.kill('SIGKILL');
-        onDone();
+        // onDone will be called by the existing 'close' listener once the process exits
       }, SIGKILL_TIMEOUT_MS);
     });
     this.closed = true;

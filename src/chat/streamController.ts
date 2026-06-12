@@ -25,9 +25,18 @@ export class StreamController {
 	private syncedToolCalls = new Set<string>();
 	private assistantMessageIndex = new Map<string, number>();
 	private saveTimer: number | null = null;
+	private disposed = false;
 
 	constructor(deps: StreamControllerDeps) {
 		this.deps = deps;
+	}
+
+	dispose(): void {
+		this.disposed = true;
+		if (this.saveTimer !== null) {
+			window.clearTimeout(this.saveTimer);
+			this.saveTimer = null;
+		}
 	}
 
 	handleChunk(ch: NormalizedUpdate): void {
@@ -66,12 +75,14 @@ export class StreamController {
 						content: contentText,
 					};
 					this.deps.syncEngine.process(ctx).then((failures) => {
+						if (this.disposed) return;
 						for (const failure of failures) {
 							this.deps.onSyncFailure?.(t().sync.ruleFailed
 								.replace('{rule}', failure.rule.toolName)
 								.replace('{error}', failure.error.message));
 						}
 					}).catch(e => {
+						if (this.disposed) return;
 						console.error('[copsilot] sync failed:', e);
 						this.deps.onSyncFailure?.(e instanceof Error ? e.message : String(e));
 					});

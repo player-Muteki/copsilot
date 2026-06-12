@@ -246,6 +246,7 @@ export class AcpClient implements OpencodeClient {
 
 		try {
 			subprocess.start();
+			subprocess.onClose((error) => this.handleSubprocessClose(subprocess, error));
 			const input = subprocess.stdout;
 			const output = subprocess.stdin;
 			if (!input || !output) {
@@ -277,8 +278,6 @@ export class AcpClient implements OpencodeClient {
 				}
 			}
 		});
-
-			subprocess.onClose((error) => this.handleSubprocessClose(subprocess, error));
 
 			const response = await this.requestWithFallback('initialize', {
 				protocolVersion: 1,
@@ -362,6 +361,9 @@ export class AcpClient implements OpencodeClient {
   }
 
   sendMessage(id: string, parts: PromptPart[], onChunk: (u: NormalizedUpdate) => void): Promise<AcpResponse> {
+    if (this.activeStreamSessionId !== null) {
+      return Promise.reject(new Error('A stream is already active'));
+    }
     this.normalizer.reset();
     this.activeStreamSessionId = id;
     this.chunkHandler = onChunk;
@@ -468,17 +470,13 @@ export class AcpClient implements OpencodeClient {
     this.availableModes = meta.availableModes;
   }
 
-  private mergeAvailableCommands(commands: AvailableCommand[]): AvailableCommand[] {
-    return mergeAvailableCommands(commands);
-  }
-
   private applySessionUpdate(update: SessionUpdate): void {
     switch (update.sessionUpdate) {
       case 'config_option_update':
         this.applyConfigOptions(update.configOptions);
         break;
       case 'available_commands_update':
-        this.availableCommands = this.mergeAvailableCommands(update.availableCommands);
+        this.availableCommands = mergeAvailableCommands(update.availableCommands);
         break;
       case 'current_mode_update':
         if (typeof update.currentModeId === 'string') {
@@ -603,7 +601,9 @@ export class AcpClient implements OpencodeClient {
     this.reconnectTimer = window.setTimeout(() => {
       this.reconnectTimer = null;
       if (this.isIntentionalDisconnect || this.connected || !this.onReconnect) return;
-      this.connect().then(() => this.onReconnect?.()).then(() => {
+      this.connect().then(() => {
+          if (!this.isIntentionalDisconnect) return this.onReconnect?.();
+        }).then(() => {
           this.reconnectAttempts = 0;
         }).catch(() => {
         if (!this.isIntentionalDisconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
@@ -661,7 +661,7 @@ export class AcpClient implements OpencodeClient {
 
   private quoteCmdArg(value: string): string {
     if (!value) return '""';
-    if (!/[\s"]/g.test(value)) return value;
+    if (!/[\s"]/.test(value)) return value;
     return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
   }
 }
