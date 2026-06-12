@@ -18,7 +18,7 @@ import { getVaultPath } from '../utils/vault';
 import type { WelcomeView } from './welcomeView';
 import type { PermissionBanner } from './permissionBanner';
 import type { InlineEditPanel } from './inlineEditPanel';
-import { UserPreferenceStore } from '../memory/preferences';
+import { buildSystemPrompt } from '../context/injection';
 import { AcpTimeoutError, AcpProcessExitError, AcpAbortError } from '../client/AcpErrors';
 
 export interface ControllerCallbacks {
@@ -59,16 +59,11 @@ export class CopsilotViewController {
 	private sendStartTime = 0;
 	private genId = 0;
 	private promptQueue: Array<{ text: string; refs: ContextRef[] }> = [];
-	private prefStore: UserPreferenceStore;
 
 	constructor(
 		private deps: ControllerDeps,
 		private callbacks: ControllerCallbacks,
 	) {
-		this.prefStore = new UserPreferenceStore(
-			() => deps.plugin.settings.userPreferences ?? {},
-			(p) => { deps.plugin.settings.userPreferences = p; try { void deps.plugin.savePluginData(); } catch {} },
-		);
 		this.streamCtrl = new StreamController({
 			state: this.state,
 			renderer: deps.renderer,
@@ -384,7 +379,6 @@ export class CopsilotViewController {
 		this.deps.renderer.addUserMessage(text);
 		this.streamCtrl.saveMessage('user', text, 'text');
 		this.deps.renderer.addAssistantPlaceholder();
-		this.prefStore.inferFromMessage(text);
 
 		try {
 			await this.syncRuntimeSession(sessionId);
@@ -499,9 +493,8 @@ export class CopsilotViewController {
 			this.deps.plugin.settings.customSkills,
 		);
 		const customAgentPrompt = buildCustomAgentPrompt(activeAgent, this.deps.plugin.settings.customSkills);
-		const sysPrompt = [this.deps.plugin.settings.systemPrompt, customAgentPrompt].filter(Boolean).join('\n\n');
-		const prefFragment = this.prefStore.toPromptFragment();
-		const combined = [sysPrompt, prefFragment].filter(Boolean).join('\n\n');
+		const customInstructions = [this.deps.plugin.settings.systemPrompt, customAgentPrompt].filter(Boolean).join('\n\n');
+		const combined = buildSystemPrompt(customInstructions);
 		if (combined) parts.push({ type: 'text', text: combined });
 
 		parts.push({ type: 'text', text });

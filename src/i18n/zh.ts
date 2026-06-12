@@ -276,8 +276,6 @@ const zh: Locale = {
       folder: '文件夹',
       filenameTemplate: '文件名模板',
       filenameTemplateDesc: '变量：{{tool}}、{{date}}、{{shortId}}',
-      intelligentPlacement: '智能分类',
-      intelligentPlacementDesc: '根据内容分析自动路由到智能文件夹（会议、任务、日记等）',
       delete: '删除',
     },
     appearance: {

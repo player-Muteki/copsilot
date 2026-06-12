@@ -161,7 +161,6 @@ export interface SyncRule {
   folder: string;
   filenameTemplate: string;
   template?: string;
-  intelligentPlacement?: boolean;
 }
 
 export interface McpServerEnvVar {
@@ -242,21 +241,6 @@ export interface PluginData {
   activeSessionId: string | null;
 }
 
-export interface UserPreferences {
-  writingStyle?: 'concise' | 'detailed' | 'academic' | 'casual';
-  preferredResponseLength?: 'short' | 'medium' | 'long';
-  commonTopics?: string[];
-  useEmojis?: boolean;
-  /** @internal accumulated inference history */
-  _history?: {
-    styleCounts: Record<string, number>;
-    totalMessages: number;
-    emojiMessages: number;
-    topicCandidates: Record<string, number>;
-    totalLength: number;
-  };
-}
-
 export interface CopsilotSettings {
 	opencodePath: string;
 	defaultAgent: string;
@@ -265,7 +249,6 @@ export interface CopsilotSettings {
 	permissionMode: PermissionLevel;
 	defaultNoteFolder: string;
 	systemPrompt: string;
-	userPreferences?: UserPreferences;
 	language: string;
 	maxNoteSize: number;
 	syncRules: SyncRule[];

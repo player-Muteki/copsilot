@@ -274,8 +274,6 @@ const en = {
       folder: 'Folder',
       filenameTemplate: 'Filename Template',
       filenameTemplateDesc: 'Variables: {{tool}}, {{date}}, {{shortId}}',
-      intelligentPlacement: 'Intelligent Placement',
-      intelligentPlacementDesc: 'Auto-route content to smart folders (Meetings, Tasks, Journal, etc.) based on content analysis',
       delete: 'Delete',
     },
     appearance: {

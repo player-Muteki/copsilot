@@ -474,12 +474,6 @@ export class CopsilotSettingsTab extends PluginSettingTab {
       .addText((t) => t.setValue(rule.filenameTemplate)
         .onChange(async (v) => { rule.filenameTemplate = v; await this.save(); }));
 
-    new Setting(block)
-      .setName(labels.intelligentPlacement)
-      .setDesc(labels.intelligentPlacementDesc)
-      .addToggle((t) => t.setValue(rule.intelligentPlacement ?? false)
-        .onChange(async (v) => { rule.intelligentPlacement = v; await this.save(); }));
-
     const delBtn = block.createEl('button', { text: labels.delete, cls: 'mod-warning' });
     delBtn.onclick = () => {
       this.plugin.settings.syncRules = this.plugin.settings.syncRules.filter((r: SyncRule) => r.id !== rule.id);
