@@ -163,27 +163,27 @@ describe('ChatRenderer', () => {
   describe('updateToolCall', () => {
     it('updates status to completed', () => {
       renderer.addToolCall('call-1', 'Search', 'search', {});
-      renderer.updateToolCall('call-1', 'completed', {}, [{ type: 'content', content: { type: 'text', text: 'Result' } }]);
+      renderer.updateToolCall('call-1', 'completed', {}, [{ type: 'content', content: { type: 'text', text: 'Result' } }], undefined, undefined, 'search');
       const stat = container.querySelector('.tc-stat');
       expect(stat?.textContent).toBe('✓');
     });
 
     it('updates status to in_progress', () => {
       renderer.addToolCall('call-1', 'Search', 'search', {});
-      renderer.updateToolCall('call-1', 'in_progress');
+      renderer.updateToolCall('call-1', 'in_progress', undefined, undefined, undefined, undefined, 'search');
       const stat = container.querySelector('.tc-stat');
       expect(stat?.textContent).toBe('…');
     });
 
     it('updates status to failed', () => {
       renderer.addToolCall('call-1', 'Search', 'search', {});
-      renderer.updateToolCall('call-1', 'failed');
+      renderer.updateToolCall('call-1', 'failed', undefined, undefined, undefined, undefined, 'search');
       const stat = container.querySelector('.tc-stat');
       expect(stat?.textContent).toBe('✗');
     });
 
     it('does nothing for unknown tool id', () => {
-      renderer.updateToolCall('unknown', 'completed');
+      renderer.updateToolCall('unknown', 'completed', undefined, undefined, undefined, undefined, 'other');
       // Should not throw
     });
 
@@ -194,7 +194,7 @@ describe('ChatRenderer', () => {
         path: '/file.ts',
         oldText: 'old',
         newText: 'new',
-      }]);
+      }], undefined, undefined, 'edit');
       const diff = container.querySelector('.copsilot-diff');
       expect(diff).not.toBeNull();
     });

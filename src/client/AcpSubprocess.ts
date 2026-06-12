@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from 'child_process';
+import { setTimeout as nodeSetTimeout, clearTimeout as nodeClearTimeout } from 'timers';
 const SIGKILL_TIMEOUT_MS = 3_000;
 const STDERR_BUFFER_LIMIT = 8_000;
 export interface AcpSubprocessLaunchSpec {
@@ -61,11 +62,11 @@ export class AcpSubprocess {
     await new Promise<void>((resolve) => {
       const proc = this.proc!;
       let done = false;
-      let timeout: number | null = null;
+      let timeout: ReturnType<typeof nodeSetTimeout> | null = null;
       const onDone = () => {
         if (done) return;
         done = true;
-        if (timeout) window.clearTimeout(timeout);
+        if (timeout) nodeClearTimeout(timeout);
         proc.removeAllListeners();
         resolve();
       };
@@ -75,7 +76,7 @@ export class AcpSubprocess {
       } catch {
         onDone();
       }
-      timeout = window.setTimeout(() => {
+      timeout = nodeSetTimeout(() => {
         if (!done) proc.kill('SIGKILL');
         onDone();
       }, SIGKILL_TIMEOUT_MS);

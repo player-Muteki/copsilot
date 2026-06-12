@@ -95,20 +95,14 @@ export class AcpRequestHandler {
 	setFsCapabilityMode(mode: FsCapabilityMode, maxBytes?: number): void {
 		this.fsCapabilityMode = mode;
 		if (this.fsDelegate && maxBytes !== undefined) {
-			this.fsDelegate = new FsDelegate({
-				vaultPath: this.vaultPath,
-				maxBytes,
-			});
+			this.fsDelegate.setMaxBytes(maxBytes);
 		}
 	}
 
 	setTerminalCapabilityMode(mode: TerminalCapabilityMode, timeoutMs?: number, maxOutputBytes?: number): void {
 		this.terminalCapabilityMode = mode;
 		if (this.terminalManager) {
-			this.terminalManager = new TerminalManager({
-				timeoutMs: timeoutMs ?? 30000,
-				maxOutputBytes: maxOutputBytes ?? 100000,
-			});
+			this.terminalManager.setConfig({ timeoutMs, maxOutputBytes });
 		}
 	}
 

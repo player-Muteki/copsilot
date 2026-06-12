@@ -77,7 +77,7 @@ describe('StreamController', () => {
 		const content = [{ type: 'content' as const, content: { type: 'text' as const, text: 'Result' } }];
 		controller.handleChunk({ kind: 'tool_call_snapshot', toolCallId: 'call-1', title: 'Search', toolKind: 'search', status: 'completed', rawInput: { q: 'test' }, rawOutput: { res: 'ok' }, contents: content });
 
-		expect(deps.renderer.updateToolCall).toHaveBeenCalledWith('call-1', 'completed', { res: 'ok' }, content, { q: 'test' }, undefined);
+		expect(deps.renderer.updateToolCall).toHaveBeenCalledWith('call-1', 'completed', { res: 'ok' }, content, { q: 'test' }, undefined, 'search');
 
 		expect(deps.syncEngine.process).toHaveBeenCalledWith({
 			toolCallId: 'call-1',

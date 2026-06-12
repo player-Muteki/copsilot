@@ -25,6 +25,10 @@ export class FsDelegate {
 		this.maxBytes = options.maxBytes;
 	}
 
+	setMaxBytes(maxBytes: number): void {
+		this.maxBytes = maxBytes;
+	}
+
 	/**
 	 * Read a text file within the vault boundary.
 	 * @param filePath - Absolute or relative path to read

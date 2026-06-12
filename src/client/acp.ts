@@ -389,7 +389,9 @@ export class AcpClient implements OpencodeClient {
         this.activeAbortController = null;
       }
     }
-    return this.requestWithFallback('cancel', { sessionId: id }).then(() => {}).catch(() => {});
+    return this.requestWithFallback('cancel', { sessionId: id }).then(() => {}).catch((e) => {
+      console.warn('[copsilot] cancel RPC failed:', e);
+    });
   }
 
   async requestPermission(req: PermissionRequest): Promise<string> {

@@ -44,7 +44,7 @@ export class SessionUpdateNormalizer {
           contents: [],
         };
         this.toolCalls.set(raw.toolCallId, snapshot);
-        return { ...snapshot, contents: [...snapshot.contents] }; // return copy to prevent outside mutation
+        return structuredClone(snapshot);
       }
       case 'tool_call_update': {
         const existing = this.toolCalls.get(raw.toolCallId);
@@ -60,7 +60,7 @@ export class SessionUpdateNormalizer {
           existing.contents = existing.contents.concat(raw.content);
         }
 
-        return { ...existing, contents: [...existing.contents] };
+        return structuredClone(existing);
       }
       case 'plan':
         return { kind: 'plan', entries: raw.entries };

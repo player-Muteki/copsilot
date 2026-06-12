@@ -34,6 +34,7 @@ export class ChatRenderer {
   private currentAssistantEl: HTMLDivElement | null = null;
   private currentAssistantWrap: HTMLDivElement | null = null;
   private currentAssistantText = '';
+  private currentThinkingText = '';
   private currentAssistantId: string | null = null;
   private currentAssistantType: 'text' | 'thinking' = 'text';
   private thinkingWrapEl: HTMLDivElement | null = null;
@@ -59,6 +60,7 @@ export class ChatRenderer {
     this.currentAssistantEl = null;
     this.currentAssistantWrap = null;
     this.currentAssistantText = '';
+    this.currentThinkingText = '';
     this.currentAssistantId = null;
     this.currentAssistantType = 'text';
     this.thinkingWrapEl = null;
@@ -185,7 +187,7 @@ export class ChatRenderer {
       this.thinkingEl = null;
       this.currentAssistantId = messageId;
       this.currentAssistantType = 'thinking';
-      this.currentAssistantText = '';
+      this.currentThinkingText = '';
     }
     if (this.currentAssistantType !== 'thinking') {
       this.thinkingEl = null;
@@ -203,8 +205,31 @@ export class ChatRenderer {
         this.thinkingWrapEl?.classList.toggle('is-collapsed');
       };
     }
-    this.thinkingEl.appendChild(this.doc.createTextNode(text));
+    this.currentThinkingText += text;
+    if (this.renderTimeout !== null) window.clearTimeout(this.renderTimeout);
+    this.renderTimeout = window.setTimeout(() => {
+      this.renderThinkingMarkdown();
+      this.renderTimeout = null;
+    }, 50);
     this.scrollToBottom();
+  }
+
+  private renderThinkingMarkdown(): void {
+    if (!this.thinkingEl || !this.currentThinkingText) return;
+    const existing = this.thinkingEl.querySelector('.md-render-subsystem');
+    if (existing) existing.remove();
+    const placeholder = this.doc.createElement('div');
+    placeholder.addClass('md-render-subsystem');
+    this.thinkingEl.appendChild(placeholder);
+    MarkdownRenderer.render(
+      this.app,
+      this.currentThinkingText,
+      placeholder,
+      '',
+      this.container as unknown as Component,
+    ).catch(() => {
+      this.thinkingEl!.textContent = this.currentThinkingText;
+    });
   }
 
   addToolCall(id: string, title: string, kind: string, input: Record<string, unknown> | undefined, locations?: { path: string }[]): void {
@@ -241,6 +266,7 @@ export class ChatRenderer {
     content?: Array<{ type: string; content?: { type: string; text?: string }; path?: string; oldText?: string; newText?: string }>,
     rawInput?: Record<string, unknown>,
     locations?: { path: string }[],
+    _kind?: string,
   ): void {
     const box = this.toolEls.get(id);
     if (!box) return;

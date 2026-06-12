@@ -4,9 +4,6 @@ type CreateElOptions = {
   attr?: Record<string, string>;
 };
 
-/** Declared globally by obsidian module types in Obsidian plugin API */
-declare var activeDocument: Document | undefined;
-
 export function installObsidianDomHelpers(): void {
   HTMLElement.prototype.addClass = function addClass(cls: string): void {
     this.classList.add(...cls.split(' ').filter(Boolean));

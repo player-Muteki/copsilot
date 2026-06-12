@@ -50,7 +50,7 @@ export class StreamController {
 				if (ch.status === 'pending') {
 					renderer.addToolCall(ch.toolCallId, ch.title, ch.toolKind, ch.rawInput, ch.locations);
 				} else {
-					renderer.updateToolCall(ch.toolCallId, ch.status, ch.rawOutput, ch.contents, ch.rawInput, ch.locations);
+					renderer.updateToolCall(ch.toolCallId, ch.status, ch.rawOutput, ch.contents, ch.rawInput, ch.locations, ch.toolKind);
 				}
 
 				if ((ch.status === 'completed' || ch.status === 'failed') && !this.syncedToolCalls.has(ch.toolCallId)) {

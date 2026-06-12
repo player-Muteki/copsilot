@@ -54,6 +54,11 @@ export class TerminalManager {
 		this.maxOutputBytes = options.maxOutputBytes;
 	}
 
+	setConfig(options: Partial<TerminalManagerOptions>): void {
+		if (options.timeoutMs !== undefined) this.timeoutMs = options.timeoutMs;
+		if (options.maxOutputBytes !== undefined) this.maxOutputBytes = options.maxOutputBytes;
+	}
+
 	create(params: TerminalCreateParams, vaultPath: string): TerminalInstance {
 		const terminalId = `term-${this.nextId++}`;
 		const cwd = params.cwd || vaultPath;
